@@ -59,20 +59,36 @@ def get_userprofile(user):
         "name": name
     }
 
-async def convida(client, grupo_alvo, entidade_principal, pausar):
+async def convida(client, grupo_alvo, entidade_principal, pausar, mensagem = False):
     print(f'Capturando membros... do {grupo_alvo.title}')
+    comecou = time.time()
     todos_membros = await client.get_participants(grupo_alvo, aggressive=True)
-    
+    print(f"Demorou {time.time() - comecou}")
+    return
     cont = 0
     membros = []
     for user in todos_membros:
         user = get_userprofile(user)
+        for blacklist in ["bot", "encarregado", "admin", "group help", "suport", "suporte", "support"]:
+            if blacklist in user['name'].lower():
+                print(f"Pulando {user['name']}")
+                continue
         usuario = InputPeerUser(user['id'], user['hash'])
-        print(f"Adicionando {user['name']} do grupo {grupo_alvo.title}")
         try:
-            await client(InviteToChannelRequest(entidade_principal, [usuario]))
+            if mensagem:
+                print(f"Enviando mensagem para {user['name']}")
+                await client.send_message(usuario, mensagem)
+            else:
+                print(f"Adicionando {user['name']} do grupo {grupo_alvo.title}")
+                await client(InviteToChannelRequest(entidade_principal, [usuario]))
+            cont += 1
+            if cont > 10:
+                break
         except PeerFloodError:
             print("Muitas requisições... Usuário bloqueado, tente novamente mais tarde")
+            break
+        except FloodWaitError:
+            print("Está sendo rápido de mais, espere alguns minutos!")
             break
         except UserPrivacyRestrictedError:
             print(f"{user['name']} não permite ser adicionado em um grupo.")
@@ -81,15 +97,21 @@ async def convida(client, grupo_alvo, entidade_principal, pausar):
             break
         except UserChannelsTooMuchError:
             print(f"{user['name']} já está em grupos de mais.")
+        except ChatAdminRequiredError:
+            print("Você precisa de permissões de administrador para fazer isso.")
+            break
+        except UserNotMutualContactError:
+            print(f"{user['name']} só é adicionado por amigos")
+            continue
         except:
             traceback.print_exc()
             print("Erro inesparado, continuando operação...")
             continue
         finally:
-            if pausar:
-                await asyncio.sleep(60)
+            await asyncio.sleep(pausar)
+    print(f"\nO bot atingiu {cont} membros no grupo {grupo_alvo.title}\n")
 
-async def main(usuarios, pausar = True):
+async def main(usuarios, pausar = 60):
     clients = []
 
     # # Conexão # #
@@ -114,10 +136,11 @@ async def main(usuarios, pausar = True):
             print(f"{numero_celular} conectado com sucesso.")
             clients.append(client)
 
+    print(clients)
+
     print("Escolha o grupo que vai receber os membros: ")
     grupo_principal = await captura_grupo(clients[0])
 
-    # entidade_principal = InputPeerChannel(grupo_principal.id, grupo_principal.access_hash)
     lista_clients = {
         client: await client.get_input_entity(grupo_principal.id)
         for client in clients   
