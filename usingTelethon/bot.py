@@ -1,6 +1,7 @@
 try:
     import selenium
 except:
+    print("Instalando dependencia...")
     from subprocess import call
     call(['pip', 'install', 'selenium'])
 

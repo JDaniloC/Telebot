@@ -1,3 +1,9 @@
+try:
+    import telethon
+except:
+    print("Instalando dependência...")
+    from subprocess import call
+    call(['pip', 'install', 'telethon'])
 from telethon.sync import TelegramClient
 from telethon.errors import *
 from telethon.tl.functions.messages import GetDialogsRequest
@@ -61,13 +67,8 @@ def get_userprofile(user):
 
 async def convida(client, grupo_alvo, entidade_principal, pausar, mensagem = False):
     print(f'Capturando membros... do {grupo_alvo.title}')
-    comecou = time.time()
-    todos_membros = await client.get_participants(grupo_alvo, aggressive=True)
-    print(f"Demorou {time.time() - comecou}")
-    return
     cont = 0
-    membros = []
-    for user in todos_membros:
+    async for user in client.iter_participants(grupo_alvo, aggressive=True):
         user = get_userprofile(user)
         for blacklist in ["bot", "encarregado", "admin", "group help", "suport", "suporte", "support"]:
             if blacklist in user['name'].lower():
@@ -82,8 +83,6 @@ async def convida(client, grupo_alvo, entidade_principal, pausar, mensagem = Fal
                 print(f"Adicionando {user['name']} do grupo {grupo_alvo.title}")
                 await client(InviteToChannelRequest(entidade_principal, [usuario]))
             cont += 1
-            if cont > 10:
-                break
         except PeerFloodError:
             print("Muitas requisições... Usuário bloqueado, tente novamente mais tarde")
             break
