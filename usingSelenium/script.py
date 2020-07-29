@@ -121,6 +121,7 @@ for i in range(30):
 
 wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "a > div.im_dialog_message_wrap > div.im_dialog_peer > span")))
 # CAPTURA DE DADOS
+print("Capturando conversas...")
 indice = 0
 for i in range(3):
     # Rola pra baixo, pra pegar todos os grupos
@@ -145,25 +146,26 @@ browser.find_element_by_css_selector("[ng-click='inviteToChannel()']").click()
 for index, nick in enumerate(lista_nicks):
     print(f"Tentando adicionar {nick}")
     adiciona_novo_contato(nick)
-    # try:
-       
-    # except Exception as e:
-    #     print(e)
-    #     acesso_negado = browser.find_elements_by_css_selector(".error_modal_window button.btn-md")
-    #     if acesso_negado != []:
-    #         acesso_negado[0].click()
-    #     try:
-    #         browser.find_element_by_css_selector(".contacts_modal_window .md_modal_action_close").click()
-    #     except:
-    #         pass
+        # try:
+        #     browser.find_element_by_css_selector(".contacts_modal_window .md_modal_action_close").click()
+        # except:
+        #     pass
     # try:
     #     browser.find_element_by_css_selector("[ng-click='showPeerInfo()']").click() 
     # except:
     #     pass
-    if index % 5 == 0:
+    if index != 0 and index % 5 == 0:
         browser.find_element_by_css_selector("  [ng-click='submitSelected()']").click()
-        time.sleep(1)
-        info_grupo(GOAL_GROUP)
+        time.sleep(30)
+        try:
+            info_grupo(GOAL_GROUP)
+        except Exception as e:
+            print(e)
+            acesso_negado = browser.find_elements_by_css_selector(".error_modal_window button.btn-md")
+            if acesso_negado != []:
+                acesso_negado[0].click()
+                info_grupo(GOAL_GROUP)
+                
         browser.find_element_by_css_selector("[ng-click='inviteToChannel()']").click()
 
 print("Adição finalizada")

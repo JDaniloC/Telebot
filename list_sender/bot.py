@@ -5,7 +5,7 @@ except ModuleNotFoundError:
     call(["pip", "install", "amanobot"])
     import amanobot
 
-import time, pprint, traceback, json, re, threading, os, sys
+import time, pprint, traceback, json, re, threading, sys
 from datetime import datetime, timedelta
 from amanobot.loop import MessageLoop
 from amanobot.namedtuple import (
@@ -124,16 +124,17 @@ class Telegram:
         Função que percorre a lista de entradas e envia para o canal
         '''
         print("Começando a transmitir")
-        keys = list(self.lista_entradas.keys())
+        lista_entradas = self.lista_entradas.copy()
+        keys = list(lista_entradas.keys())
         indice = 0
-        print(keys)
         while indice < len(keys):
             key = keys[indice]
             if self.transmitindo and self.esperarAte(chat_id, key):
                 if self.transmitindo:
                     for canal in self.channel:
                         try:
-                            self.bot.sendMessage(canal, self.lista_entradas[key])
+                            self.bot.sendMessage(
+                                canal, lista_entradas[key])
                         except Exception as e:
                             self.bot = amanobot.Bot(self.token)
                             indice -= 1
@@ -142,7 +143,7 @@ class Telegram:
         self.bot.sendMessage(chat_id, "Transmissão finalizada")
         print("Terminou a transmissão")
 
-    def formatar_entradas(self, comandos):
+    def formatar_entradas(self, tipo, comandos):
         '''
         Recebe uma lista de comandos, e formata do jeito correto.
         '''
@@ -158,11 +159,12 @@ class Telegram:
                 par = comando['par']
                 direcao = comando['ordem']
                 resultado[str(indice)+"/"+str(dia)+"/"+hora] = f'''
-🏁 -- ==W.S SINA'S== -- 🏁
-🔰 ENTRADA {hora}
-⏱ Período: M5
-📊 Ativo: {par}
+🎯 M.M_007 Bot 🎯
+⏱ ENTRADA {hora}
+💲 Período: M5
+⚠️ Ativo: {par}
 {"⬆" if direcao.lower() == "call" else "⬇"} Direção: {direcao.upper()}
+{tipo}
                 '''
             except Exception as e:
                 print(type(e), e)
@@ -217,7 +219,7 @@ class Telegram:
             self.bot.answerCallbackQuery(
                 query_id, text = "Modo receber nova lista.")
             self.bot.sendMessage(
-                from_id, "Me envie a próxima lista:"
+                from_id, "Me envie a próxima lista (especifique a quantidade de gales no início '1/2 gale'):"
             )
             self.esperar_lista = True
         elif query_data == "showlist":
@@ -228,9 +230,7 @@ class Telegram:
                 mesagem = "Nenhuma lista registrada"
             else:
                 mesagem = "Lista atual:"
-            self.bot.sendMessage(
-                from_id, mesagem
-            )
+            self.bot.sendMessage(from_id, mesagem)
             
             for key in self.lista_entradas:
                 self.bot.sendMessage(
@@ -250,6 +250,7 @@ class Telegram:
         elif query_data == "desligar":
             self.bot.answerCallbackQuery(
                 query_id, "Bot desligado.")
+            self.bot.sendMessage(from_id, "Bot desligado")
             self.rodando = False
 
     def recebe_comandos(self, comando):
@@ -263,7 +264,17 @@ class Telegram:
             if chat_id in self.meu_id:
                 if self.esperar_lista:
                     pprint.pprint(comando)
-                    self.lista_entradas = self.formatar_entradas(comando.get('text').split("\n"))
+                    entradas = comando.get('text').split("\n")
+                    tipo = ""
+                    for entrada in entradas:
+                        if "1 gal" in entrada:
+                            tipo = "🐔 Até 1 gale"
+                            break
+                        elif "2 gal" in entrada:
+                            tipo = "🐔 Até 2 gales"
+                            break
+                    
+                    self.lista_entradas = self.formatar_entradas(tipo, entradas)
                     self.esperar_lista = False
                     self.bot.sendMessage(chat_id, "Lista salva")
                 elif comando.get('text') in [
@@ -277,7 +288,7 @@ class Telegram:
                 pprint.pprint(comando)
 
 if __name__ == "__main__":
-    dia, mes, ano, hora, minuto = 29, 7, 2020, 1, 10
+    dia, mes, ano, hora, minuto = 31, 7, 2020, 1, 10
 
     data_final = datetime(ano, mes, dia, hora, minuto)
     tempo_restante = datetime.timestamp(data_final) - datetime.timestamp(datetime.now())
@@ -285,8 +296,7 @@ if __name__ == "__main__":
     if  tempo_restante < 0:
         print(sys.argv)
         input("Acabou o tempo teste. Digite enter para fechar o programa.")
-        os.remove(sys.argv[0])
-        input()
+        sys.exit(0)
     else:
         restante = data_final - datetime.now()
         horas_minutos = timedelta(seconds = tempo_restante)
