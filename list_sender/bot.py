@@ -148,6 +148,7 @@ class Telegram:
 ⏱ ENTRADA {hora}
 💲 Período: M5  
 ⚠️ Ativo: {par} 
+🐔 2 Martingale
 {"⬆" if direcao.lower() == "call" else "⬇"} Direção: {direcao.upper()}
                 '''
             except Exception as e:
