@@ -72,6 +72,7 @@ def strDateHour(number):
 
 class Telegram:
     def __init__(self, token, channel, meu_id):
+        self.token = token
         self.bot = amanobot.Bot(token)
         self.lista_entradas = {}
         self.esperar_lista = False
@@ -100,9 +101,15 @@ class Telegram:
         horas, minutos = map(int, horario.split(":"))
         
         data = datetime.now()
-        alvo = data.replace(day = int(dia), hour = horas, minute = minutos, second = 0, microsecond = 0)
-        alvo = datetime.fromtimestamp(alvo.timestamp() - 300)
-        segundos = alvo.timestamp() - datetime.now().timestamp()
+        alvo = datetime.fromtimestamp(
+            data.replace(
+            day = int(dia), 
+            hour = horas, 
+            minute = minutos, 
+            second = 0, 
+            microsecond = 0).timestamp() - 300) # -5min 
+        agora = datetime.utcnow().timestamp() - 10800 # -3Horas
+        segundos = alvo.timestamp() - agora
         if segundos > 0:
             print(f"Esperando até as {alvo}")
             self.bot.sendMessage(identificador, f"\n [...] Próxima entrada será às {alvo} [...]")
@@ -117,14 +124,21 @@ class Telegram:
         Função que percorre a lista de entradas e envia para o canal
         '''
         print("Começando a transmitir")
-        for key in self.lista_entradas:
+        keys = list(self.lista_entradas.keys())
+        indice = 0
+        print(keys)
+        while indice < len(keys):
+            key = keys[indice]
             if self.transmitindo and self.esperarAte(chat_id, key):
                 if self.transmitindo:
                     for canal in self.channel:
                         try:
-                            self.bot.sendMessage(canal, self.   lista_entradas[key])
+                            self.bot.sendMessage(canal, self.lista_entradas[key])
                         except Exception as e:
-                            self.bot.sendMessage(chat_id, f"Eu tive um  erro: {e}. Continuando...")
+                            self.bot = amanobot.Bot(self.token)
+                            indice -= 1
+                            self.bot.sendMessage(chat_id, f"Eu tive um  erro:\n{e}\nTentando novamente...")
+            indice += 1
         self.bot.sendMessage(chat_id, "Transmissão finalizada")
         print("Terminou a transmissão")
 
@@ -144,11 +158,10 @@ class Telegram:
                 par = comando['par']
                 direcao = comando['ordem']
                 resultado[str(indice)+"/"+str(dia)+"/"+hora] = f'''
-🏹 M.M_007 Bot 🏹
-⏱ ENTRADA {hora}
-💲 Período: M5  
-⚠️ Ativo: {par} 
-🐔 2 Martingale
+🏁 -- ==W.S SINA'S== -- 🏁
+🔰 ENTRADA {hora}
+⏱ Período: M5
+📊 Ativo: {par}
 {"⬆" if direcao.lower() == "call" else "⬇"} Direção: {direcao.upper()}
                 '''
             except Exception as e:
