@@ -68,6 +68,7 @@ def get_userprofile(user):
 async def convida(client, grupo_alvo, entidade_principal, pausar, mensagem = False):
     print(f'Capturando membros... do {grupo_alvo.title}')
     cont = 0
+    pausar = False
     async for user in client.iter_participants(grupo_alvo, aggressive=True):
         user = get_userprofile(user)
         for blacklist in ["bot", "encarregado", "admin", "group help", "suport", "suporte", "support"]:
@@ -83,34 +84,33 @@ async def convida(client, grupo_alvo, entidade_principal, pausar, mensagem = Fal
                 print(f"Adicionando {user['name']} do grupo {grupo_alvo.title}")
                 await client(InviteToChannelRequest(entidade_principal, [usuario]))
             cont += 1
+            pausar = True
         except PeerFloodError:
             print("Muitas requisições... Usuário bloqueado, tente novamente mais tarde")
             break
         except FloodWaitError:
             print("Está sendo rápido de mais, espere alguns minutos!")
             break
-        except UserPrivacyRestrictedError:
-            print(f"{user['name']} não permite ser adicionado em um grupo.")
         except ChannelInvalidError:
             print("Erro na escolha do grupo ao qual vai receber membros")
             break
+        except UserPrivacyRestrictedError:
+            print(f"{user['name']} não permite ser adicionado em um grupo.")
         except UserChannelsTooMuchError:
             print(f"{user['name']} já está em grupos de mais.")
         except ChatAdminRequiredError:
             print("Você precisa de permissões de administrador para fazer isso.")
-            break
         except UserNotMutualContactError:
             print(f"{user['name']} só é adicionado por amigos")
-            continue
         except:
             traceback.print_exc()
             print("Erro inesparado, continuando operação...")
-            continue
-        finally:
+        if pausar:
             await asyncio.sleep(pausar)
+            pausar = False
     print(f"\nO bot atingiu {cont} membros no grupo {grupo_alvo.title}\n")
 
-async def main(usuarios, pausar = 60):
+async def main(usuarios, pausar = 30, mensagem = False):
     clients = []
 
     # # Conexão # #
@@ -135,24 +135,28 @@ async def main(usuarios, pausar = 60):
             print(f"{numero_celular} conectado com sucesso.")
             clients.append(client)
 
-    print(clients)
+    if not mensagem:
+        print("Escolha o grupo que vai receber os membros: ")
+        grupo_principal = await captura_grupo(clients[0])
 
-    print("Escolha o grupo que vai receber os membros: ")
-    grupo_principal = await captura_grupo(clients[0])
-
-    lista_clients = {
-        client: await client.get_input_entity(grupo_principal.id)
-        for client in clients   
-    }
-
+        lista_clients = {
+            client: await client.get_input_entity(grupo_principal.id)
+            for client in clients   
+        }
+    else:
+        mensagem = input("Digite a mensagem: ")
+        
     esperar = []
     
     print("\nEscolha um grupo para cada bot pegar membros:")
     for client in clients:
         grupo_alvo = await captura_grupo(client)
 
-        entidade_principal = lista_clients[client]
-        task = asyncio.create_task(convida(client, grupo_alvo, entidade_principal, pausar))
+        if not mensagem:
+            entidade_principal = lista_clients[client]
+        else:
+            entidade_principal = None
+        task = asyncio.create_task(convida(client, grupo_alvo, entidade_principal, pausar, mensagem))
         
         esperar.append(task)
 

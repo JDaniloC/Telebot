@@ -2,7 +2,7 @@ from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import time, json
+import time
 
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
     """
@@ -35,7 +35,25 @@ def info_grupo(alvo):
             time.sleep(2)
             browser.find_element_by_css_selector("[ng-click='showPeerInfo()']").click() 
 
+def escolhe_grupo():
+    contatos = browser.find_elements_by_css_selector("a > div.im_dialog_message_wrap > div.im_dialog_peer > span")
+    lista_nomes = []
+        
+    print("Escolha o grupo: ")
+    for index, contato in enumerate(contatos):
+        print(f"[{index}]", contato.text)
+        lista_nomes.append(contato.text)
+    
+    escolha = input("Sua escolha: ")
+    while not escolha.isnumeric():
+        escolha = input("Sua escolha: ")
+
+    return lista_nomes[int(escolha)]
+
 def captura_nicknames(nome_grupo):
+    black_list = [
+        "Bot", "bot", "sinais", "Sinais", 
+        "Help", "help", "encarregado"]
     info_grupo(nome_grupo)
     contador = -1
     lista = browser.find_elements_by_css_selector("a.md_modal_list_peer_name")
@@ -48,14 +66,15 @@ def captura_nicknames(nome_grupo):
 
         pessoa.click()
         try:
-            time.sleep(0.1)
             nick = browser.find_element_by_css_selector("div[ng-if='user.username'] span")
-            if "bot" not in nick.text and nick.text != "":
+            if nick.text != "":
+                for sugestao in black_list:
+                    if sugestao in nick.text:
+                        continue
+                
                 print(f"Capturei {nick.text}")
                 resultado.append(nick.text)
                 contador += 1
-            if contador == 300:
-                break
         except:
             pass
         finally:
@@ -69,7 +88,6 @@ def captura_nicknames(nome_grupo):
     return resultado
 
 def adiciona_novo_contato(nick):
-    browser.find_element_by_css_selector("[ng-click='inviteToGroup()']").click()
     entrada = browser.find_element_by_css_selector(".contacts_modal_search_field")
     entrada.send_keys(nick)
     contato = wait.until(
@@ -78,19 +96,14 @@ def adiciona_novo_contato(nick):
             ))
     contato.click()
     entrada.clear()
-    browser.find_element_by_css_selector("[ng-click='submitSelected()']").click()
 
-with open("config.json", encoding= "UTF-8") as file:
-    config = json.load(file)
-    NUMBER_PHONE = config["number"]
-    AIM_GROUP = config["from"]
-    GOAL_GROUP = config["to"]
+NUMBER_PHONE = "+5581996207886" # Número de celular
 
 # ENTRAR E AUTENTICAÇÃO
 
 browser = Chrome("chromedriver.exe")
 browser.get("https://web.telegram.org/")
-wait = WebDriverWait(browser, 10)
+wait = WebDriverWait(browser, 60)
 
 numero = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "[name=phone_number]")))
 numero.send_keys(NUMBER_PHONE)
@@ -108,36 +121,50 @@ for i in range(30):
 
 wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "a > div.im_dialog_message_wrap > div.im_dialog_peer > span")))
 # CAPTURA DE DADOS
+indice = 0
+for i in range(3):
+    # Rola pra baixo, pra pegar todos os grupos
+    chats = browser.find_elements_by_css_selector("a > div.im_dialog_message_wrap > div.im_dialog_peer > span")
+    for chat in chats[indice:]:
+        chat.click()
+        indice += 1
 
-with open("nicks.json") as file:
-    lista_nicks = json.load(file)
+print("Grupo que vai ser extraído:")
+AIM_GROUP = escolhe_grupo()
 
-print(f"Número de pessoas: {len(lista_nicks)}")
+print("\nCaptrando nicknames...")
+lista_nicks = captura_nicknames(AIM_GROUP)
+print(f"Captura finalizada.\nNúmero de pessoas: {len(lista_nicks)}\n")
 
-# print("\nCaptrando nicknames...")
-# lista_nicks = captura_nicknames(AIM_GROUP)
-# print("Captura finalizada")
-
-# with open("nicks.json", "w") as file:
-#     json.dump(lista_nicks, file)
-#     print("Lista de nicks guardada no nicks.json")
+print("Grupo que vai receber:")
+GOAL_GROUP = escolhe_grupo()
 
 # ADICIONAR MEMBROS
 info_grupo(GOAL_GROUP)
-print("\nAdicionando contatos")
-for nick in lista_nicks:
-    try:
-        adiciona_novo_contato(nick)
-    except:
-        acesso_negado = browser.find_elements_by_css_selector(".error_modal_window button.btn-md")
-        if acesso_negado != []:
-            acesso_negado[0].click()
-        try:
-            browser.find_element_by_css_selector(".contacts_modal_window .md_modal_action_close").click()
-        except:
-            pass
-    try:
-        browser.find_element_by_css_selector("[ng-click='showPeerInfo()']").click() 
-    except:
-        pass
+browser.find_element_by_css_selector("[ng-click='inviteToChannel()']").click()
+for index, nick in enumerate(lista_nicks):
+    print(f"Tentando adicionar {nick}")
+    adiciona_novo_contato(nick)
+    # try:
+       
+    # except Exception as e:
+    #     print(e)
+    #     acesso_negado = browser.find_elements_by_css_selector(".error_modal_window button.btn-md")
+    #     if acesso_negado != []:
+    #         acesso_negado[0].click()
+    #     try:
+    #         browser.find_element_by_css_selector(".contacts_modal_window .md_modal_action_close").click()
+    #     except:
+    #         pass
+    # try:
+    #     browser.find_element_by_css_selector("[ng-click='showPeerInfo()']").click() 
+    # except:
+    #     pass
+    if index % 5 == 0:
+        browser.find_element_by_css_selector("  [ng-click='submitSelected()']").click()
+        time.sleep(1)
+        info_grupo(GOAL_GROUP)
+        browser.find_element_by_css_selector("[ng-click='inviteToChannel()']").click()
+
 print("Adição finalizada")
+browser.close()

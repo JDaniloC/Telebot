@@ -86,17 +86,20 @@ class Interface(Frame):
             for index, titulo in enumerate(titulos):
                 Label(self, text = titulo).grid(row = i, column = index)
                 campo = Entry(self, textvariable = variaveis[index])
-                # if i > 1:
-                #     campo.config(state = 'disabled')
+                if i > 1:
+                    campo.config(state = 'disabled')
                 campo.grid(row = i + 1, column = index)
             self.entradas.append(client)
-
+        
         self.pausar = StringVar(value = "0")
-        Label(self, text = "Tempo de pausa (em segundos):").grid(row = 22, column = 0, columnspan = 2)
-        Entry(self, textvariable = self.pausar, width = 10).grid(row = 22, column = 1, columnspan = 2)
-        Button(self, text = "Extrair", command = self.comecar).grid(row = 22, column = 2, columnspan = 3)
+        self.mensagem = BooleanVar(value = False)
+        
+        Label(self, text = "Pausa (segundos):").grid(row = 23, column = 0)
+        Entry(self, textvariable = self.pausar, width = 10).grid(row = 23, column = 0, columnspan = 3)
+        Checkbutton(self, text = "Mensagem?", variable = self.mensagem).grid(row = 23, column = 2)
+        Button(self, text = "Começar", command = self.comecar).grid(row = 24, columnspan = 3)
         # Comentar na versão trial
-        self.carregar()
+        # self.carregar()
 
     def carregar(self):
         try:
@@ -120,8 +123,8 @@ class Interface(Frame):
                 resultado.append(client)
         
         # Comentar essa parte para a versão trial
-        with open("dados.json", "w") as file:
-            json.dump(resultado, file, indent = 2)
+        # with open("dados.json", "w") as file:
+        #     json.dump(resultado, file, indent = 2)
 
         # Fazer o botão pausar e ter opção mandar mensagem
         try:
@@ -133,13 +136,13 @@ class Interface(Frame):
         self.janela.destroy()
         loop = asyncio.get_event_loop()
         try:
-            loop.run_until_complete(main(resultado, pausar))
+            loop.run_until_complete(main(resultado, pausar, self.mensagem.get()))
         except Exception as e:
             print(e)
         
         input("Programa finalizado")
 
 janela = Tk()
-janela.title("Extrator de membros")
+janela.title("TelegramBot")
 program = Interface(janela)
 program.mainloop()
