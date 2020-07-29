@@ -143,7 +143,7 @@ class Telegram:
         self.bot.sendMessage(chat_id, "Transmissão finalizada")
         print("Terminou a transmissão")
 
-    def formatar_entradas(self, tipo, comandos):
+    def formatar_entradas(self, tipo, periodo, comandos):
         '''
         Recebe uma lista de comandos, e formata do jeito correto.
         '''
@@ -161,7 +161,7 @@ class Telegram:
                 resultado[str(indice)+"/"+str(dia)+"/"+hora] = f'''
 🏁 -- ==W.S SINA'S== -- 🏁
 🔰 ENTRADA {hora}
-⏱ Período: M5
+⏱ Período: {periodo}
 📊 Ativo: {par}
 {"⬆" if direcao.lower() == "call" else "⬇"} Direção: {direcao.upper()}
 {tipo}
@@ -253,6 +253,26 @@ class Telegram:
             self.bot.sendMessage(from_id, "Bot desligado")
             self.rodando = False
 
+    def pegar_gales(self, lista):
+        for entrada in lista:
+            if "1 gal" in entrada:
+                return "🐔 Até 1 gale"
+            elif "2 gal" in entrada:
+                return "🐔 Até 2 gales"
+        return ""
+
+    def pegar_periodo(self, lista):
+        for entrada in lista:
+            if "M1" in entrada:
+                return "M1"
+            elif "M5" in entrada:
+                return "M5"
+            elif "M15" in entrada:
+                return "M15"
+            elif "M30" in entrada:
+                return "M30"
+        return "M5"
+
     def recebe_comandos(self, comando):
         '''
         Função que é chamada caso falar no chat
@@ -265,16 +285,9 @@ class Telegram:
                 if self.esperar_lista:
                     pprint.pprint(comando)
                     entradas = comando.get('text').split("\n")
-                    tipo = ""
-                    for entrada in entradas:
-                        if "1 gal" in entrada:
-                            tipo = "🐔 Até 1 gale"
-                            break
-                        elif "2 gal" in entrada:
-                            tipo = "🐔 Até 2 gales"
-                            break
-                    
-                    self.lista_entradas = self.formatar_entradas(tipo, entradas)
+                    tipo = self.pegar_gales(entradas)
+                    periodo = self.pegar_periodo(entradas)
+                    self.lista_entradas = self.formatar_entradas(tipo, periodo, entradas)
                     self.esperar_lista = False
                     self.bot.sendMessage(chat_id, "Lista salva")
                 elif comando.get('text') in [
@@ -288,7 +301,7 @@ class Telegram:
                 pprint.pprint(comando)
 
 if __name__ == "__main__":
-    dia, mes, ano, hora, minuto = 31, 7, 2020, 1, 10
+    dia, mes, ano, hora, minuto = 5, 8, 2020, 1, 10
 
     data_final = datetime(ano, mes, dia, hora, minuto)
     tempo_restante = datetime.timestamp(data_final) - datetime.timestamp(datetime.now())
