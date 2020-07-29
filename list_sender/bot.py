@@ -43,7 +43,7 @@ def pegar_comando(texto):
         ordem = re.search(r'CALL|PUT|call|put', texto)[0].lower()
     except Exception as e:
         print(type(e), e)
-        print(f"Ocorreu um erro no arquivo de entradas, revise o comando {texto}")
+        print(f"Não entendi a entrada {texto}")
         data = [1, 1, 2000]
         hora = [00, 00]
         par = "EURUSD"
@@ -74,6 +74,7 @@ class Telegram:
     def __init__(self, token, channel, meu_id):
         self.token = token
         self.bot = amanobot.Bot(token)
+        self.my_id = self.bot.getMe()['id']
         self.lista_entradas = {}
         self.esperar_lista = False
         self.channel = channel
@@ -115,7 +116,7 @@ class Telegram:
             self.bot.sendMessage(identificador, f"\n [...] Próxima entrada será às {alvo} [...]")
             time.sleep(segundos)
             return True
-        elif segundos > -5:
+        elif segundos > -60:
             return True
         return False
 
@@ -138,7 +139,7 @@ class Telegram:
                         except Exception as e:
                             self.bot = amanobot.Bot(self.token)
                             indice -= 1
-                            self.bot.sendMessage(chat_id, f"Eu tive um  erro:\n{e}\nTentando novamente...")
+                            print(f"Eu tive um  erro:\n{e}\nTentando novamente...")
             indice += 1
         self.bot.sendMessage(chat_id, "Transmissão finalizada")
         print("Terminou a transmissão")
@@ -219,7 +220,12 @@ class Telegram:
             self.bot.answerCallbackQuery(
                 query_id, text = "Modo receber nova lista.")
             self.bot.sendMessage(
-                from_id, "Me envie a próxima lista (especifique a quantidade de gales no início '1/2 gale'):"
+                from_id, """Me envie a próxima lista. 
+    Formato da lista:
+        Sinais (1/2) gale M(1/5/15/30)
+        01/07/2020 00:05 EURUSD PUT
+        01/07/2020 01:00 USDJPY CALL
+        """
             )
             self.esperar_lista = True
         elif query_data == "showlist":
@@ -232,9 +238,11 @@ class Telegram:
                 mesagem = "Lista atual:"
             self.bot.sendMessage(from_id, mesagem)
             
+            lista_entradas = ""
             for key in self.lista_entradas:
-                self.bot.sendMessage(
-                    from_id, self.lista_entradas[key] + "\n")
+                lista_entradas += f"{self.lista_entradas[key]}\n"
+            self.bot.sendMessage(
+                    from_id, lista_entradas + "\n")
         elif query_data == "start":
             print("Entranho no modo de transmissão")
             self.bot.answerCallbackQuery(
@@ -295,8 +303,16 @@ class Telegram:
                     "/start"]:
                     self.mostrar_comandos(comando)
             elif comando['chat'].get("type") in ["group", "supergroup", "channel"]:
-                if comando['chat']['id'] not in self.channel:
+                adicionar = comando.get('new_chat_participant')
+                remover = comando.get('left_chat_participant')
+                if adicionar:
+                    adicionar = adicionar.get('id') == self.my_id
+                elif remover:
+                    remover = remover.get('id') == self.my_id
+                if adicionar and comando['chat']['id'] not in self.channel:
                     self.channel.append(comando['chat']['id'])
+                elif remover and comando['chat']['id'] in self.channel:
+                    self.channel.remove(comando['chat']['id'])
             else:
                 pprint.pprint(comando)
 
