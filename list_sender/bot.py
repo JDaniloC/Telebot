@@ -159,10 +159,10 @@ class Telegram:
                 par = comando['par']
                 direcao = comando['ordem']
                 resultado[str(indice)+"/"+str(dia)+"/"+hora] = f'''
-🎯 M.M_007 Bot 🎯
-⏱ ENTRADA {hora}
-💲 Período: M5
-⚠️ Ativo: {par}
+🏁 -- ==W.S SINA'S== -- 🏁
+🔰 ENTRADA {hora}
+⏱ Período: M5
+📊 Ativo: {par}
 {"⬆" if direcao.lower() == "call" else "⬇"} Direção: {direcao.upper()}
 {tipo}
                 '''
