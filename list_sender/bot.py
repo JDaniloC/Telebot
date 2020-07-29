@@ -5,8 +5,8 @@ except ModuleNotFoundError:
     call(["pip", "install", "amanobot"])
     import amanobot
 
-import time, pprint, traceback, json, re, threading
-from datetime import datetime
+import time, pprint, traceback, json, re, threading, os, sys
+from datetime import datetime, timedelta
 from amanobot.loop import MessageLoop
 from amanobot.namedtuple import (
     InlineKeyboardMarkup, InlineKeyboardButton)
@@ -277,6 +277,24 @@ class Telegram:
                 pprint.pprint(comando)
 
 if __name__ == "__main__":
+    dia, mes, ano, hora, minuto = 29, 7, 2020, 1, 10
+
+    data_final = datetime(ano, mes, dia, hora, minuto)
+    tempo_restante = datetime.timestamp(data_final) - datetime.timestamp(datetime.now())
+
+    if  tempo_restante < 0:
+        print(sys.argv)
+        input("Acabou o tempo teste. Digite enter para fechar o programa.")
+        os.remove(sys.argv[0])
+        input()
+    else:
+        restante = data_final - datetime.now()
+        horas_minutos = timedelta(seconds = tempo_restante)
+        duracao = str(horas_minutos)[:-7].replace('days', 'dias')
+        if "dias" not in duracao:
+            duracao += "h"
+        print(f"O período teste dura {duracao}")
+
     verificador = True
     try:
         with open("settings.json", "r+") as file:

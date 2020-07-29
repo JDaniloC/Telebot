@@ -6,7 +6,7 @@ class Config(Frame):
     def __init__(self, janela):
         super().__init__(janela)
         self.janela = janela
-        self.pack(fill = X, padx = 5, pady = 5)
+        self.pack(fill = X, padx = 10, pady = 10)
         self.widgets()
 
     def widgets(self):
@@ -25,7 +25,7 @@ class Config(Frame):
         with open("settings.json", "r+") as file:
             info = json.load(file)
 
-        info['canal'] = ", ".join(info['canal'])
+        info['canal'] = ", ".join(map(str, info['canal']))
         info["id"] = ", ".join(list(map(str, info["id"])))
         for key in self.entradas:
             self.entradas[key].insert(END, info[key])
