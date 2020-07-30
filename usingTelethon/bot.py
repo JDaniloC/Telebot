@@ -15,6 +15,7 @@ from tkinter import *
 from tkinter import messagebox
 import json, asyncio, sys, time
 from scraper import main
+from datetime import datetime
 
 def captura_id_hash(numero):
     browser = Chrome("chromedriver")
@@ -86,20 +87,23 @@ class Interface(Frame):
             for index, titulo in enumerate(titulos):
                 Label(self, text = titulo).grid(row = i, column = index)
                 campo = Entry(self, textvariable = variaveis[index])
-                if i > 1:
-                    campo.config(state = 'disabled')
+                # Comentar na versão paga
+                # if i > 1:
+                #     campo.config(state = 'disabled')
                 campo.grid(row = i + 1, column = index)
             self.entradas.append(client)
         
         self.pausar = StringVar(value = "0")
-        self.mensagem = BooleanVar(value = False)
+        self.modo = StringVar(value = "add")
         
         Label(self, text = "Pausa (segundos):").grid(row = 23, column = 0)
         Entry(self, textvariable = self.pausar, width = 10).grid(row = 23, column = 0, columnspan = 3)
-        Checkbutton(self, text = "Mensagem?", variable = self.mensagem).grid(row = 23, column = 2)
-        Button(self, text = "Começar", command = self.comecar).grid(row = 24, columnspan = 3)
+        Radiobutton(self, text = "Adição", variable = self.modo, value = "add").grid(row = 24, column = 0)
+        Radiobutton(self, text = "Mensagem", variable = self.modo, value = "msg").grid(row = 24, column = 1)
+        Radiobutton(self, text = "Captura", variable = self.modo, value = "save").grid(row = 24, column = 2)
+        Button(self, text = "Começar", command = self.comecar).grid(row = 25, columnspan = 3)
         # Comentar na versão trial
-        # self.carregar()
+        self.carregar()
 
     def carregar(self):
         try:
@@ -123,8 +127,8 @@ class Interface(Frame):
                 resultado.append(client)
         
         # Comentar essa parte para a versão trial
-        # with open("dados.json", "w") as file:
-        #     json.dump(resultado, file, indent = 2)
+        with open("dados.json", "w") as file:
+            json.dump(resultado, file, indent = 2)
 
         # Fazer o botão pausar e ter opção mandar mensagem
         try:
@@ -136,7 +140,7 @@ class Interface(Frame):
         self.janela.destroy()
         loop = asyncio.get_event_loop()
         try:
-            loop.run_until_complete(main(resultado, pausar, self.mensagem.get()))
+            loop.run_until_complete(main(resultado, pausar, self.modo.get()))
         except Exception as e:
             print(e)
         

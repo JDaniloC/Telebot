@@ -9,7 +9,7 @@ from telethon.errors import *
 from telethon.tl.functions.messages import GetDialogsRequest
 from telethon.tl.types import InputPeerEmpty, InputPeerChannel, InputPeerUser
 from telethon.tl.functions.channels import InviteToChannelRequest
-import csv, json, time, sys, traceback, asyncio
+import json, time, sys, traceback, asyncio
 
 async def captura_grupo(client):
     '''
@@ -46,7 +46,7 @@ async def captura_grupo(client):
 
 def get_userprofile(user):
     if user.username:
-        username = user.username
+        username = "@" + user.username
     else:
         username = ""
 
@@ -65,7 +65,14 @@ def get_userprofile(user):
         "name": name
     }
 
-async def convida(client, grupo_alvo, entidade_principal, pausar, mensagem = False):
+def guarda_usuario(info):
+    with open("usuarios.json", "r+", encoding = "utf-8") as file:
+        lista = json.load(file)
+    lista.append(info)
+    with open("usuarios.json", "w", encoding = "utf-8") as file:
+        json.dump(lista, file, indent = 2)
+
+async def convida(client, grupo_alvo, entidade_principal, pausar, modo = "add"):
     print(f'Capturando membros... do {grupo_alvo.title}')
     cont = 0
     pausar = False
@@ -77,9 +84,14 @@ async def convida(client, grupo_alvo, entidade_principal, pausar, mensagem = Fal
                 continue
         usuario = InputPeerUser(user['id'], user['hash'])
         try:
-            if mensagem:
+            if modo == "msg":
                 print(f"Enviando mensagem para {user['name']}")
                 await client.send_message(usuario, mensagem)
+            elif modo == "save":
+                print(f"Guardando {user['name']}")
+                identificador, nome = user['name'].split(" - ")
+                if identificador != "":
+                    guarda_usuario(identificador)
             else:
                 print(f"Adicionando {user['name']} do grupo {grupo_alvo.title}")
                 await client(InviteToChannelRequest(entidade_principal, [usuario]))
@@ -110,7 +122,9 @@ async def convida(client, grupo_alvo, entidade_principal, pausar, mensagem = Fal
             pausar = False
     print(f"\nO bot atingiu {cont} membros no grupo {grupo_alvo.title}\n")
 
-async def main(usuarios, pausar = 30, mensagem = False):
+async def main(usuarios, pausar = 30, modo = "msg"):
+    with open("usuarios.json", "w") as file:
+        json.dump([], file)
     clients = []
 
     # # Conexão # #
@@ -135,7 +149,7 @@ async def main(usuarios, pausar = 30, mensagem = False):
             print(f"{numero_celular} conectado com sucesso.")
             clients.append(client)
 
-    if not mensagem:
+    if modo == "add":
         print("Escolha o grupo que vai receber os membros: ")
         grupo_principal = await captura_grupo(clients[0])
 
@@ -143,7 +157,7 @@ async def main(usuarios, pausar = 30, mensagem = False):
             client: await client.get_input_entity(grupo_principal.id)
             for client in clients   
         }
-    else:
+    elif modo == "msg":
         mensagem = input("Digite a mensagem: ")
         
     esperar = []
@@ -152,11 +166,11 @@ async def main(usuarios, pausar = 30, mensagem = False):
     for client in clients:
         grupo_alvo = await captura_grupo(client)
 
-        if not mensagem:
+        if modo == "add":
             entidade_principal = lista_clients[client]
         else:
             entidade_principal = None
-        task = asyncio.create_task(convida(client, grupo_alvo, entidade_principal, pausar, mensagem))
+        task = asyncio.create_task(convida(client, grupo_alvo, entidade_principal, pausar, modo))
         
         esperar.append(task)
 

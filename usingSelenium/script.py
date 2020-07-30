@@ -2,7 +2,7 @@ from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import time
+import time, json
 
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
     """
@@ -130,11 +130,17 @@ for i in range(3):
         chat.click()
         indice += 1
 
-print("Grupo que vai ser extraído:")
-AIM_GROUP = escolhe_grupo()
+# print("Grupo que vai ser extraído:")
+# AIM_GROUP = escolhe_grupo()
 
 print("\nCaptrando nicknames...")
-lista_nicks = captura_nicknames(AIM_GROUP)
+with open('usuarios.json', encoding = "utf-8") as file:
+    dic_nicks = json.load(file)
+    lista_nicks = []
+    for nick in dic_nicks:
+        if nick['id'] != "":
+            lista_nicks.append(nick['id'])
+# lista_nicks = captura_nicknames(AIM_GROUP)
 print(f"Captura finalizada.\nNúmero de pessoas: {len(lista_nicks)}\n")
 
 print("Grupo que vai receber:")
@@ -145,7 +151,10 @@ info_grupo(GOAL_GROUP)
 browser.find_element_by_css_selector("[ng-click='inviteToChannel()']").click()
 for index, nick in enumerate(lista_nicks):
     print(f"Tentando adicionar {nick}")
-    adiciona_novo_contato(nick)
+    try:
+        adiciona_novo_contato(nick)
+    except:
+        pass
         # try:
         #     browser.find_element_by_css_selector(".contacts_modal_window .md_modal_action_close").click()
         # except:
@@ -156,6 +165,7 @@ for index, nick in enumerate(lista_nicks):
     #     pass
     if index != 0 and index % 5 == 0:
         browser.find_element_by_css_selector("  [ng-click='submitSelected()']").click()
+        print("         Esperando 30 segundos...")
         time.sleep(30)
         try:
             info_grupo(GOAL_GROUP)
@@ -165,8 +175,9 @@ for index, nick in enumerate(lista_nicks):
             if acesso_negado != []:
                 acesso_negado[0].click()
                 info_grupo(GOAL_GROUP)
-                
-        browser.find_element_by_css_selector("[ng-click='inviteToChannel()']").click()
+        
+        botao_convidar = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "[ng-click='inviteToChannel()']")))
+        botao_convidar.click()
 
 print("Adição finalizada")
 browser.close()

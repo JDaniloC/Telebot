@@ -134,11 +134,12 @@ class Telegram:
                 if self.transmitindo:
                     for canal in self.channel:
                         try:
+                            print(f"Mandando {key}")
                             self.bot.sendMessage(
                                 canal, lista_entradas[key])
                         except Exception as e:
                             self.bot = amanobot.Bot(self.token)
-                            indice -= 1
+                            # indice -= 1
                             print(f"Eu tive um  erro:\n{e}\nTentando novamente...")
             indice += 1
         self.bot.sendMessage(chat_id, "Transmissão finalizada")
@@ -240,7 +241,7 @@ class Telegram:
             
             lista_entradas = ""
             for key in self.lista_entradas:
-                lista_entradas += f"{self.lista_entradas[key]}\n"
+                lista_entradas += f"{self.lista_entradas[key]}"
             self.bot.sendMessage(
                     from_id, lista_entradas + "\n")
         elif query_data == "start":
