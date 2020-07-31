@@ -139,7 +139,8 @@ class Telegram:
                                 canal, lista_entradas[key])
                         except Exception as e:
                             self.bot = amanobot.Bot(self.token)
-                            # indice -= 1
+                            indice -= 1
+                            time.sleep(1)
                             print(f"Eu tive um  erro:\n{e}\nTentando novamente...")
             indice += 1
         self.bot.sendMessage(chat_id, "Transmissão finalizada")
@@ -161,10 +162,10 @@ class Telegram:
                 par = comando['par']
                 direcao = comando['ordem']
                 resultado[str(indice)+"/"+str(dia)+"/"+hora] = f'''
-🎯 M.M_007 Bot 🎯
-⏱ ENTRADA {hora}
-💲 Período: {periodo}
-⚠️ Ativo: {par}
+🏁 -- ==W.S SINA'S== -- 🏁
+🔰 ENTRADA {hora}
+⏱ Período: {periodo}
+📊 Ativo: {par}
 {"⬆" if direcao.lower() == "call" else "⬇"} Direção: {direcao.upper()}
 {tipo}
                 '''
