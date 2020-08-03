@@ -134,7 +134,6 @@ class Telegram:
                 if self.transmitindo:
                     for canal in self.channel:
                         try:
-                            print(f"Mandando {key}")
                             self.bot.sendMessage(
                                 canal, lista_entradas[key])
                         except Exception as e:
@@ -162,10 +161,10 @@ class Telegram:
                 par = comando['par']
                 direcao = comando['ordem']
                 resultado[str(indice)+"/"+str(dia)+"/"+hora] = f'''
-🏁 -- ==W.S SINA'S== -- 🏁
-🔰 ENTRADA {hora}
-⏱ Período: {periodo}
-📊 Ativo: {par}
+🎯 M.M_007 Bot 🎯
+⏱ ENTRADA {hora}
+💲 Período: {periodo}
+⚠️ Ativo: {par}
 {"⬆" if direcao.lower() == "call" else "⬇"} Direção: {direcao.upper()}
 {tipo}
                 '''
