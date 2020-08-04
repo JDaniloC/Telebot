@@ -8,8 +8,8 @@ except ModuleNotFoundError:
 import time, pprint, traceback, json, re, threading, sys
 from datetime import datetime, timedelta
 from amanobot.loop import MessageLoop
-from amanobot.namedtuple import (
-    InlineKeyboardMarkup, InlineKeyboardButton)
+from amanobot.namedtuple import (InlineKeyboardMarkup, InlineKeyboardButton,
+ ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove)
 
 def escreve_erros(erro):
     '''
@@ -41,13 +41,9 @@ def pegar_comando(texto):
         hora = [int(x) for x in re.split(r'\W', hora)]
         par = re.search(r'[A-Za-z]{6}', texto.replace("/", ""))[0]
         ordem = re.search(r'CALL|PUT|call|put', texto)[0].lower()
-    except Exception as e:
-        print(type(e), e)
+    except:
         print(f"Não entendi a entrada {texto}")
-        data = [1, 1, 2000]
-        hora = [00, 00]
-        par = "EURUSD"
-        ordem = "PUT"
+        return None
 
     comando = {
         "data": data,
@@ -75,13 +71,15 @@ class Telegram:
         self.token = token
         self.bot = amanobot.Bot(token)
         self.my_id = self.bot.getMe()['id']
-        self.lista_entradas = {}
-        self.esperar_lista = False
+        self.listas_de_entradas = {}
         self.channel = channel
         self.meu_id = meu_id
         
         self.rodando = True
-        self.transmitindo = True
+        self.escolher_lista = False
+        self.esperar_lista = False
+        self.parar_transmissao = False
+        self.lista_atual = 1
 
         MessageLoop(self.bot, {
             "chat": self.recebe_comandos,
@@ -120,18 +118,18 @@ class Telegram:
             return True
         return False
 
-    def transmissao(self, chat_id):
+    def transmissao(self, chat_id, atual):
         '''
         Função que percorre a lista de entradas e envia para o canal
         '''
         print("Começando a transmitir")
-        lista_entradas = self.lista_entradas.copy()
+        lista_entradas = self.listas_de_entradas[atual]['lista']
         keys = list(lista_entradas.keys())
         indice = 0
         while indice < len(keys):
             key = keys[indice]
-            if self.transmitindo and self.esperarAte(chat_id, key):
-                if self.transmitindo:
+            if self.listas_de_entradas[atual]['on'] and self.esperarAte(chat_id, key):
+                if self.listas_de_entradas[atual]['on']:
                     for canal in self.channel:
                         try:
                             self.bot.sendMessage(
@@ -142,6 +140,7 @@ class Telegram:
                             time.sleep(1)
                             print(f"Eu tive um  erro:\n{e}\nTentando novamente...")
             indice += 1
+        del self.listas_de_entradas[atual]
         self.bot.sendMessage(chat_id, "Transmissão finalizada")
         print("Terminou a transmissão")
 
@@ -153,6 +152,8 @@ class Telegram:
         for indice, comando in enumerate(comandos):
             try:
                 comando = pegar_comando(comando)
+                if comando == None:
+                    continue
                 dia, mes, ano = comando['data']
                 data = "/".join(
                     list(map(strDateHour, comando["data"])))
@@ -169,7 +170,6 @@ class Telegram:
 {tipo}
                 '''
             except Exception as e:
-                print(type(e), e)
                 print("Não entendi a entrada:", comando)
         return resultado
 
@@ -233,29 +233,44 @@ class Telegram:
             print("Entrando no modo de mostragem")
             self.bot.answerCallbackQuery(
                 query_id, text = "Modo mostrar lista")
-            if self.lista_entradas == {}:
-                mesagem = "Nenhuma lista registrada"
-            else:
-                mesagem = "Lista atual:"
-            self.bot.sendMessage(from_id, mesagem)
-            
-            lista_entradas = ""
-            for key in self.lista_entradas:
-                lista_entradas += f"{self.lista_entradas[key]}"
-            self.bot.sendMessage(
-                    from_id, lista_entradas + "\n")
+
+            for options in self.listas_de_entradas.values():
+                self.bot.sendMessage(
+                    from_id, "\n".join(options['lista'].values()))
+            self.bot.sendMessage(from_id, "Fim das listas.")
         elif query_data == "start":
             print("Entranho no modo de transmissão")
             self.bot.answerCallbackQuery(
                 query_id, text = "Modo enviar lista")
-            self.transmitindo = True
-            threading.Thread(
-                target = self.transmissao, args = (from_id,)
-            ).start()
+
+            opcoes = []
+            for key, value in self.listas_de_entradas.items():
+                if not value['on']:
+                    opcoes.append(str(key) + " - " + value['nome'])
+            botoes = []
+            for opcao in opcoes:
+                botoes.append([KeyboardButton( text = opcao )])
+            if len(botoes) > 0:
+                self.escolher_lista = True
+                self.bot.sendMessage(from_id, "Qual lista?", 
+                    reply_markup = ReplyKeyboardMarkup( keyboard = botoes))
+            else:
+                self.bot.sendMessage(from_id, "Nenhuma lista registrada")
+            
         elif query_data == "stop":
-            self.transmitindo = False
-            self.bot.answerCallbackQuery(
-                query_id, "Transmissão parada.")
+            opcoes = []
+            for key, value in self.listas_de_entradas.items():
+                if value['on']:
+                    opcoes.append(str(key) + " - " + value['nome'])
+            botoes = []
+            for opcao in opcoes:
+                botoes.append([KeyboardButton( text = opcao )])
+            if len(botoes) > 0:
+                self.parar_transmissao = True
+                self.bot.sendMessage(from_id, "Qual lista?", 
+                    reply_markup = ReplyKeyboardMarkup( keyboard = botoes))
+            else:
+                self.bot.sendMessage(from_id, "Nenhuma transmissão ativa")
         elif query_data == "desligar":
             self.bot.answerCallbackQuery(
                 query_id, "Bot desligado.")
@@ -291,19 +306,53 @@ class Telegram:
             content_type, chat_type, chat_id = amanobot.glance(comando)
 
             if chat_id in self.meu_id:
-                if self.esperar_lista:
-                    pprint.pprint(comando)
+                if self.escolher_lista:
+                    key, nome = comando['text'].split(" - ")
+                    key = int(key)
+                    if self.listas_de_entradas.get(key):
+                        mensagem = "Lista já iniciada"
+                        if not self.listas_de_entradas[key]['on']:
+                            self.listas_de_entradas[key]['on'] = True
+                            threading.Thread(
+                                target = self.transmissao, 
+                                args = (chat_id, key)
+                            ).start()
+                            mensagem = "Transmissão iniciada"
+                        self.bot.sendMessage(chat_id, mensagem,
+                            reply_markup = ReplyKeyboardRemove())
+                    self.escolher_lista = False
+                elif self.esperar_lista:
+                    pprint.pprint(comando['text'])
                     entradas = comando.get('text').split("\n")
                     tipo = self.pegar_gales(entradas)
                     periodo = self.pegar_periodo(entradas)
-                    self.lista_entradas = self.formatar_entradas(tipo, periodo, entradas)
+                    self.lista_atual += 1
+                    self.listas_de_entradas[self.lista_atual] = {
+                        "on": False,
+                        "nome": f"{tipo}|{periodo}",
+                        "lista": self.formatar_entradas(
+                            tipo, periodo, entradas)
+                    }
                     self.esperar_lista = False
                     self.bot.sendMessage(chat_id, "Lista salva")
+                elif self.parar_transmissao:
+                    try:
+                        key, nome = comando['text'].split(" - ")
+                        self.listas_de_entradas[int(key)]['on'] = False
+                        self.bot.sendMessage(
+                            chat_id, "Transmissão cancelada", 
+                            reply_markup = ReplyKeyboardRemove())
+                    except:
+                        self.bot.sendMessage(chat_id, 
+                            "Não consegui parar a transmissão", 
+                            reply_markup = ReplyKeyboardRemove())
+                    self.parar_transmissao = False
                 elif comando.get('text') in [
                     "/comandos", 
                     "/start"]:
                     self.mostrar_comandos(comando)
-            elif comando['chat'].get("type") in ["group", "supergroup", "channel"]:
+            elif comando['chat'].get("type") in [
+                "group", "supergroup", "channel"]:
                 adicionar = comando.get('new_chat_participant')
                 remover = comando.get('left_chat_participant')
                 if adicionar:
