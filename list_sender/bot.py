@@ -162,10 +162,10 @@ class Telegram:
                 par = comando['par']
                 direcao = comando['ordem']
                 resultado[str(indice)+"/"+str(dia)+"/"+hora] = f'''
-🎯 M.M_007 Bot 🎯
-⏱ ENTRADA {hora}
-💲 Período: {periodo}
-⚠️ Ativo: {par}
+🏁 -- ==W.S SINA'S== -- 🏁
+🔰 ENTRADA {hora}
+⏱ Período: {periodo}
+📊 Ativo: {par}
 {"⬆" if direcao.lower() == "call" else "⬇"} Direção: {direcao.upper()}
 {tipo}
                 '''
@@ -367,7 +367,7 @@ class Telegram:
                 pprint.pprint(comando)
 
 if __name__ == "__main__":
-    dia, mes, ano, hora, minuto = 5, 8, 2020, 1, 10
+    dia, mes, ano, hora, minuto = 10, 8, 2020, 1, 10
 
     data_final = datetime(ano, mes, dia, hora, minuto)
     tempo_restante = datetime.timestamp(data_final) - datetime.timestamp(datetime.now())
