@@ -144,7 +144,7 @@ class Telegram:
                             timeframe = lista_entradas[key]['periodo']
                             threading.Thread(
                                 target=self.mandar_resultado,
-                                args = (chat_id, par, 
+                                args = (canal, par, 
                                 timeframe, direcao)).start()
                         except Exception as e:
                             self.bot = amanobot.Bot(self.token)
