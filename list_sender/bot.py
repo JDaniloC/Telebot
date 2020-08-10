@@ -5,6 +5,7 @@ except ModuleNotFoundError:
     call(["pip", "install", "amanobot"])
     import amanobot
 
+from iqoptionapi.stable_api import IQ_Option
 import time, pprint, traceback, json, re, threading, sys
 from datetime import datetime, timedelta
 from amanobot.loop import MessageLoop
@@ -35,7 +36,7 @@ def pegar_comando(texto):
         if data:
             data = [int(x) for x in re.split(r"\W", data[0])]
         else:
-            hoje = datetime.now()
+            hoje = datetime.fromtimestamp(datetime.utcnow().timestamp() - 10800)
             data = [hoje.day, hoje.month, hoje.year]
         hora = re.search(r'\d{2}:\d{2}', texto)[0]
         hora = [int(x) for x in re.split(r'\W', hora)]
@@ -75,6 +76,9 @@ class Telegram:
         self.channel = channel
         self.meu_id = meu_id
         
+        self.IQ = IQ_Option("hiyivo1180@tmail7.com", "senha123")
+        self.IQ.connect()
+
         self.rodando = True
         self.escolher_lista = False
         self.esperar_lista = False
@@ -133,16 +137,56 @@ class Telegram:
                     for canal in self.channel:
                         try:
                             self.bot.sendMessage(
-                                canal, lista_entradas[key])
+                                canal, lista_entradas[key]['msg'])
+                            
+                            par =lista_entradas[key]['par']
+                            direcao = lista_entradas[key]['direcao']
+                            timeframe = lista_entradas[key]['periodo']
+                            threading.Thread(
+                                target=self.mandar_resultado,
+                                args = (chat_id, par, 
+                                timeframe, direcao)).start()
                         except Exception as e:
                             self.bot = amanobot.Bot(self.token)
                             indice -= 1
                             time.sleep(1)
-                            print(f"Eu tive um  erro:\n{e}\nTentando novamente...")
             indice += 1
         del self.listas_de_entradas[atual]
         self.bot.sendMessage(chat_id, "Transmissão finalizada")
         print("Terminou a transmissão")
+
+    def mandar_resultado(
+        self, chat_id, paridade, timeframe, direcao):
+        timeframe *= 60
+        time.sleep((timeframe * 4) + 300)
+
+        velas = self.IQ.get_candles(
+            paridade, timeframe, 4, time.time())
+        velas = [
+            1 if x['close'] - x['open'] > 0 else 
+            0 if x['close'] - x['open'] == 0 else 
+            -1 for x in velas
+        ]
+        print(datetime.now(), velas)
+
+        win = False
+        gales = 0
+        while gales < 3 and not win:
+            win = velas[gales] == 1 if direcao == "call" else velas[gales] == -1
+            if not win:
+                gales += 1
+        
+        resposta = f"""
+📊 Par: {paridade}
+{'⬆' if direcao.lower() == "call" else '⬇'} Direção: {direcao}
+⏰ Tempo: {timeframe // 60}
+Resultado: {(gales * 'G') + '✅' if win else '❌'}
+        """
+        try:
+            self.bot.sendMessage(chat_id, resposta)
+        except:
+            self.bot = amanobot.Bot(self.token)
+            self.bot.sendMessage(chat_id, resposta)
 
     def formatar_entradas(self, tipo, periodo, comandos):
         '''
@@ -161,14 +205,19 @@ class Telegram:
                     list(map(strDateHour, comando["hora"])))
                 par = comando['par']
                 direcao = comando['ordem']
-                resultado[str(indice)+"/"+str(dia)+"/"+hora] = f'''
-🏁 -- ==W.S SINA'S== -- 🏁
+                key = str(indice)+"/"+str(dia)+"/"+hora
+                resultado[key] = {}
+                resultado[key]['msg'] = f'''
+🎯 M.M_007 Bot 🎯
 🔰 ENTRADA {hora}
 ⏱ Período: {periodo}
 📊 Ativo: {par}
 {"⬆" if direcao.lower() == "call" else "⬇"} Direção: {direcao.upper()}
 {tipo}
                 '''
+                resultado[key]['par'] = par
+                resultado[key]['direcao'] = direcao.lower()
+                resultado[key]['periodo'] = int(periodo.strip("M"))
             except Exception as e:
                 print("Não entendi a entrada:", comando)
         return resultado
@@ -367,13 +416,12 @@ class Telegram:
                 pprint.pprint(comando)
 
 if __name__ == "__main__":
-    dia, mes, ano, hora, minuto = 10, 8, 2020, 1, 10
+    dia, mes, ano, hora, minuto = 30, 8, 2020, 1, 10
 
     data_final = datetime(ano, mes, dia, hora, minuto)
     tempo_restante = datetime.timestamp(data_final) - datetime.timestamp(datetime.now())
 
     if  tempo_restante < 0:
-        print(sys.argv)
         input("Acabou o tempo teste. Digite enter para fechar o programa.")
         sys.exit(0)
     else:

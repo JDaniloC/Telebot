@@ -72,18 +72,22 @@ def guarda_usuario(info):
     with open("usuarios.json", "w", encoding = "utf-8") as file:
         json.dump(lista, file, indent = 2)
 
-async def convida(client, grupo_alvo, entidade_principal, pausar, modo = "add"):
+async def convida(client, grupo_alvo, entidade_principal, pausar, modo = "add", offset = 0):
     print(f'Capturando membros... do {grupo_alvo.title}')
     cont = 0
     pausar = False
+    print("Começando a partir do", offset)
     async for user in client.iter_participants(grupo_alvo, aggressive=True):
+        if offset > 0:
+            offset -= 1
+            continue
         user = get_userprofile(user)
         for blacklist in ["bot", "encarregado", "admin", "group help", "suport", "suporte", "support"]:
             if blacklist in user['name'].lower():
                 print(f"Pulando {user['name']}")
                 continue
-        usuario = InputPeerUser(user['id'], user['hash'])
         try:
+            usuario = InputPeerUser(user['id'], user['hash'])
             if modo == "msg":
                 print(f"Enviando mensagem para {user['name']}")
                 await client.send_message(usuario, mensagem)
@@ -93,7 +97,7 @@ async def convida(client, grupo_alvo, entidade_principal, pausar, modo = "add"):
                 if identificador != "":
                     guarda_usuario(identificador)
             else:
-                print(f"Adicionando {user['name']} do grupo {grupo_alvo.title}")
+                # print(f"Adicionando {user['name']} do grupo {grupo_alvo.title}", flush = True)
                 await client(InviteToChannelRequest(entidade_principal, [usuario]))
             cont += 1
             pausar = True
@@ -104,7 +108,7 @@ async def convida(client, grupo_alvo, entidade_principal, pausar, modo = "add"):
             print("Está sendo rápido de mais, espere alguns minutos!")
             break
         except ChannelInvalidError:
-            print("Erro na escolha do grupo ao qual vai receber membros")
+            print("Erro na escolha do grupo ao qual vai receber membros.")
             break
         except UserPrivacyRestrictedError:
             print(f"{user['name']} não permite ser adicionado em um grupo.")
@@ -113,7 +117,9 @@ async def convida(client, grupo_alvo, entidade_principal, pausar, modo = "add"):
         except ChatAdminRequiredError:
             print("Você precisa de permissões de administrador para fazer isso.")
         except UserNotMutualContactError:
-            print(f"{user['name']} só é adicionado por amigos")
+            print(f"{user['name']} só é adicionado por amigos.")
+        except UserKickedError:
+            print(f"{user['name']} foi expulso do grupo.")
         except:
             traceback.print_exc()
             print("Erro inesparado, continuando operação...")
@@ -122,7 +128,7 @@ async def convida(client, grupo_alvo, entidade_principal, pausar, modo = "add"):
             pausar = False
     print(f"\nO bot atingiu {cont} membros no grupo {grupo_alvo.title}\n")
 
-async def main(usuarios, pausar = 30, modo = "msg"):
+async def main(usuarios, pausar = 30, modo = "msg", offset = 0):
     with open("usuarios.json", "w") as file:
         json.dump([], file)
     clients = []
@@ -149,20 +155,21 @@ async def main(usuarios, pausar = 30, modo = "msg"):
             print(f"{numero_celular} conectado com sucesso.")
             clients.append(client)
 
+    lista_clients = {}
     if modo == "add":
-        print("Escolha o grupo que vai receber os membros: ")
-        grupo_principal = await captura_grupo(clients[0])
+        for client in clients:
+            print("Escolha o grupo que vai RECEBER os membros: ")
+            grupo_principal = await captura_grupo(client)
 
-        lista_clients = {
-            client: await client.get_input_entity(grupo_principal.id)
-            for client in clients   
-        }
+            lista_clients.update({
+                client: await client.get_input_entity(grupo_principal.id)
+            })
     elif modo == "msg":
         mensagem = input("Digite a mensagem: ")
         
     esperar = []
     
-    print("\nEscolha um grupo para cada bot pegar membros:")
+    print("\nEscolha um grupo para cada bot PEGAR membros:")
     for client in clients:
         grupo_alvo = await captura_grupo(client)
 
@@ -170,9 +177,11 @@ async def main(usuarios, pausar = 30, modo = "msg"):
             entidade_principal = lista_clients[client]
         else:
             entidade_principal = None
-        task = asyncio.create_task(convida(client, grupo_alvo, entidade_principal, pausar, modo))
+        task = asyncio.create_task(convida(client, grupo_alvo, entidade_principal, pausar, modo, offset))
         
         esperar.append(task)
+
+        offset += 50
 
     await asyncio.wait(esperar)
 

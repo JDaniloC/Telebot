@@ -46,10 +46,6 @@ def captura_id_hash(numero):
     app_id = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'span[class="form-control input-xlarge uneditable-input"]')))
     app_hash = browser.find_elements_by_css_selector('span[class="form-control input-xlarge uneditable-input"]')[1]
 
-    # Salva o resultado
-    with open("dados.json") as file:
-        lista = json.load(file)
-
     dados = {
         "id": int(app_id.text),
         "hash": app_hash.text,
@@ -88,22 +84,33 @@ class Interface(Frame):
                 Label(self, text = titulo).grid(row = i, column = index)
                 campo = Entry(self, textvariable = variaveis[index])
                 # Comentar na versão paga
-                # if i > 1:
-                #     campo.config(state = 'disabled')
+                if i > 1:
+                    campo.config(state = 'disabled')
                 campo.grid(row = i + 1, column = index)
             self.entradas.append(client)
         
         self.pausar = StringVar(value = "0")
+        self.pular = StringVar(value = "0")
         self.modo = StringVar(value = "add")
         
-        Label(self, text = "Pausa (segundos):").grid(row = 23, column = 0)
-        Entry(self, textvariable = self.pausar, width = 10).grid(row = 23, column = 0, columnspan = 3)
-        Radiobutton(self, text = "Adição", variable = self.modo, value = "add").grid(row = 24, column = 0)
-        Radiobutton(self, text = "Mensagem", variable = self.modo, value = "msg").grid(row = 24, column = 1)
-        Radiobutton(self, text = "Captura", variable = self.modo, value = "save").grid(row = 24, column = 2)
-        Button(self, text = "Começar", command = self.comecar).grid(row = 25, columnspan = 3)
+        Label(self, text = "Pausa (segundos):").grid(
+            row = 23, column = 0)
+        Entry(self, textvariable = self.pausar, width = 5).grid(
+            row = 23, column = 0, columnspan = 3)
+        Label(self, text = "Pular:").grid(
+            row = 23, column = 1, columnspan = 2)
+        Entry(self, textvariable = self.pular, width = 5).grid(
+            row = 23, column = 2, columnspan = 3)
+        Radiobutton(self, text = "Adição", variable = self.modo, value = "add").grid(
+            row = 24, column = 0)
+        Radiobutton(self, text = "Mensagem", variable = self.modo, value = "msg").grid(
+            row = 24, column = 1)
+        Radiobutton(self, text = "Captura", variable = self.modo, value = "save").grid(
+            row = 24, column = 2)
+        Button(self, text = "Começar", command = self.comecar).grid(
+            row = 25, columnspan = 3)
         # Comentar na versão trial
-        self.carregar()
+        # self.carregar()
 
     def carregar(self):
         try:
@@ -127,26 +134,34 @@ class Interface(Frame):
                 resultado.append(client)
         
         # Comentar essa parte para a versão trial
-        with open("dados.json", "w") as file:
-            json.dump(resultado, file, indent = 2)
+        # with open("dados.json", "w") as file:
+        #     json.dump(resultado, file, indent = 2)
 
         # Fazer o botão pausar e ter opção mandar mensagem
         try:
             pausar = int(self.pausar.get())
+            pular = int(self.pular.get())
         except:
-            messagebox.showinfo("Tempo de espera", "Precisa ser um número")
+            messagebox.showinfo("Error", 
+                "Tempo de espera e quantidade de pessoas para pular precisam ser um número")
             return
 
         self.janela.destroy()
         loop = asyncio.get_event_loop()
         try:
-            loop.run_until_complete(main(resultado, pausar, self.modo.get()))
+            loop.run_until_complete(main(resultado, pausar, self.modo.get(), pular))
         except Exception as e:
             print(e)
         
         input("Programa finalizado")
 
-janela = Tk()
-janela.title("TelegramBot")
-program = Interface(janela)
-program.mainloop()
+final = datetime(2020, 8, 14, 0, 0)
+restante = final - datetime.now()
+if final.timestamp() - datetime.now().timestamp() > 0:
+    print(str(restante).replace("days", "dias"))
+    janela = Tk()
+    janela.title("TelegramBot")
+    program = Interface(janela)
+    program.mainloop()
+else:
+    input("O período teste acabou.")
