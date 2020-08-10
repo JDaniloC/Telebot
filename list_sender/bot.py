@@ -139,13 +139,13 @@ class Telegram:
                             self.bot.sendMessage(
                                 canal, lista_entradas[key]['msg'])
                             
-                            par =lista_entradas[key]['par']
-                            direcao = lista_entradas[key]['direcao']
-                            timeframe = lista_entradas[key]['periodo']
-                            threading.Thread(
-                                target=self.mandar_resultado,
-                                args = (canal, par, 
-                                timeframe, direcao)).start()
+                            # par =lista_entradas[key]['par']
+                            # direcao = lista_entradas[key]['direcao']
+                            # timeframe = lista_entradas[key]['periodo']
+                            # threading.Thread(
+                            #     target=self.mandar_resultado,
+                            #     args = (canal, par, 
+                            #     timeframe, direcao)).start()
                         except Exception as e:
                             self.bot = amanobot.Bot(self.token)
                             indice -= 1
@@ -158,6 +158,8 @@ class Telegram:
     def mandar_resultado(
         self, chat_id, paridade, timeframe, direcao):
         timeframe *= 60
+        hora_entrada = datetime.fromtimestamp(
+            time.time() + 300).strftime("%H:%M")
         time.sleep((timeframe * 4) + 300)
 
         velas = self.IQ.get_candles(
@@ -167,7 +169,6 @@ class Telegram:
             0 if x['close'] - x['open'] == 0 else 
             -1 for x in velas
         ]
-        print(datetime.now(), velas)
 
         win = False
         gales = 0
@@ -180,7 +181,8 @@ class Telegram:
 📊 Par: {paridade}
 {'⬆' if direcao.lower() == "call" else '⬇'} Direção: {direcao}
 ⏰ Tempo: {timeframe // 60}
-Resultado: {(gales * 'G') + '✅' if win else '❌'}
+Horário: {hora_entrada}
+Resultado: {(gales * '🐔') + '✅' if win else '❌'}
         """
         try:
             self.bot.sendMessage(chat_id, resposta)
@@ -208,7 +210,7 @@ Resultado: {(gales * 'G') + '✅' if win else '❌'}
                 key = str(indice)+"/"+str(dia)+"/"+hora
                 resultado[key] = {}
                 resultado[key]['msg'] = f'''
-🎯 M.M_007 Bot 🎯
+🏁 -- ==W.S SINA'S== -- 🏁
 🔰 ENTRADA {hora}
 ⏱ Período: {periodo}
 📊 Ativo: {par}
