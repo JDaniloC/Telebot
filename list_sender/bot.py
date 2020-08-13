@@ -13,7 +13,7 @@ from amanobot.namedtuple import (InlineKeyboardMarkup, InlineKeyboardButton,
  ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove)
 
 
-bot_name = "🎯 M.M_007 Bot 🎯"
+bot_name = "🏁 -- ==W.S SINA'S== -- 🏁"
 
 def escreve_erros(erro):
     '''
@@ -43,7 +43,8 @@ def pegar_comando(texto):
             data = [hoje.day, hoje.month, hoje.year]
         hora = re.search(r'\d{2}:\d{2}', texto)[0]
         hora = [int(x) for x in re.split(r'\W', hora)]
-        par = re.search(r'[A-Za-z]{6}', texto.replace("/", ""))[0]
+        par = re.search(
+            r'[A-Za-z]{6}(-OTC)?', texto.replace("/", ""))[0]
         ordem = re.search(r'CALL|PUT|call|put', texto)[0].lower()
     except:
         print(f"Não entendi a entrada {texto}")
@@ -141,14 +142,15 @@ class Telegram:
                         try:
                             mensagem = self.bot.sendMessage(
                                 canal, lista_entradas[key]['msg'])
-                            par =lista_entradas[key]['par']
+                            par = lista_entradas[key]['par']
+                            hora = lista_entradas[key]['hora']
                             direcao = lista_entradas[key]['direcao']
                             timeframe = lista_entradas[key]['periodo']
                             gales = lista_entradas[key]['gale']
                             threading.Thread(
                                 target=self.mandar_resultado,
                                 args = ((canal, mensagem['message_id']), 
-                                par, timeframe, direcao, gales)).start()
+                                par, hora, timeframe, direcao, gales)).start()
                         except Exception as e:
                             self.bot = amanobot.Bot(self.token)
                             indice -= 1
@@ -159,30 +161,46 @@ class Telegram:
         print("Terminou a transmissão")
 
     def mandar_resultado(
-        self, message_id, paridade, timeframe, direcao, max_gales):
+        self, message_id, paridade, hora_entrada, 
+        timeframe, direcao, max_gales):
+        time.sleep(300)
         timeframe *= 60
-        hora_entrada = datetime.fromtimestamp(
-            time.time() + 300
-        ).strftime("%H:%M")
-        time.sleep((timeframe * 3) + 305 )
+        espera = datetime.now().timestamp() + (timeframe * 3) + 5
 
-        velas = self.IQ.get_candles(
-            paridade, timeframe, 4, time.time())
-        velas = [
-            1 if x['close'] - x['open'] > 0 else 
-            0 if x['close'] - x['open'] == 0 else 
-            -1 for x in velas
-        ]
-        print(velas)
+        abertas = self.IQ.get_all_open_time()
+        esta_aberto = True
+        abertas_digital = [x for x in abertas['digital'] 
+                            if abertas['digital'][x]['open']]
+        if timeframe == 60:
+            esta_aberto = (
+                paridade in abertas_digital or paridade in 
+                [x for x in abertas['turbo'] 
+                if abertas['turbo'][x]['open']])
+        else:
+            esta_aberto = (
+                abertas in abertas_digital or paridade in
+                [x for x in abertas['binary'] 
+                if abertas['binary'][x]['open']])
 
-        texto_gales = f"🐔 Até {max_gales[0]} gales" if len(max_gales) == 1 else ""
-        win = False
         gales = 0
-        while gales < 3 and not win:
-            win = velas[gales] == 1 if direcao == "call" else velas[gales] == -1
-            if not win:
-                gales += 1
-        
+        win = False
+        texto_gales = f"🐔 Até {max_gales[0]} gales" if len(max_gales) == 1 else ""
+        if esta_aberto:
+            time.sleep(espera - time.time())
+
+            velas = self.IQ.get_candles(
+                paridade, timeframe, 4, time.time())
+            velas = [
+                1 if x['close'] - x['open'] > 0 else 
+                0 if x['close'] - x['open'] == 0 else 
+                -1 for x in velas
+            ]
+            
+            while gales < 3 and not win:
+                win = velas[gales] == 1 if direcao == "call" else velas[gales] == -1
+                if not win:
+                    gales += 1
+
         if len(max_gales) == 1 and gales == 2 and max_gales[0] == 1:
             win = False
 
@@ -193,7 +211,7 @@ class Telegram:
 ⏱ Horário: {hora_entrada}
 {'⬆' if direcao.lower() == "call" else '⬇'} Direção: {direcao.upper()}
 {texto_gales}
-Resultado: {(gales * '🐔') + '✅' if win else '❌'}
+Resultado: {'🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else '❌'}
         """
         try:
             self.bot.editMessageText(message_id, resposta)
@@ -229,6 +247,7 @@ Resultado: {(gales * '🐔') + '✅' if win else '❌'}
 {tipo}
                 '''
                 resultado[key]['par'] = par
+                resultado[key]['hora'] = hora
                 resultado[key]['gale'] = [
                     int(x) for x in tipo.split() if x.isdigit()]
                 resultado[key]['direcao'] = direcao.lower()
