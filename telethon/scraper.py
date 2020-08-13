@@ -72,7 +72,9 @@ def guarda_usuario(info):
     with open("usuarios.json", "w", encoding = "utf-8") as file:
         json.dump(lista, file, indent = 2)
 
-async def convida(client, grupo_alvo, entidade_principal, pausar, modo = "add", offset = 0):
+async def interagir(
+    client, grupo_alvo, entidade_principal, 
+    pausar, modo = "add", offset = 0, mensagem = {}):
     print(f'Capturando membros... do {grupo_alvo.title}')
     cont = 0
     pausar = False
@@ -82,7 +84,9 @@ async def convida(client, grupo_alvo, entidade_principal, pausar, modo = "add", 
             offset -= 1
             continue
         user = get_userprofile(user)
-        for blacklist in ["bot", "encarregado", "admin", "group help", "suport", "suporte", "support"]:
+        for blacklist in [
+            "bot", "encarregado", "admin", "group help", 
+            "suport", "suporte", "support"]:
             if blacklist in user['name'].lower():
                 print(f"Pulando {user['name']}")
                 continue
@@ -90,7 +94,11 @@ async def convida(client, grupo_alvo, entidade_principal, pausar, modo = "add", 
             usuario = InputPeerUser(user['id'], user['hash'])
             if modo == "msg":
                 print(f"Enviando mensagem para {user['name']}")
-                await client.send_message(usuario, mensagem)
+                await client.send_message(usuario, mensagem['msg'])
+                if mensagem['path'] != "":
+                    await client.send_file(
+                        usuario, mensagem['path'], 
+                        voice_note = mensagem['audio'])
             elif modo == "save":
                 print(f"Guardando {user['name']}")
                 identificador, nome = user['name'].split(" - ")
@@ -128,7 +136,7 @@ async def convida(client, grupo_alvo, entidade_principal, pausar, modo = "add", 
             pausar = False
     print(f"\nO bot atingiu {cont} membros no grupo {grupo_alvo.title}\n")
 
-async def main(usuarios, pausar = 30, modo = "msg", offset = 0):
+async def main(usuarios, pausar = 30, modo = "msg", offset = 0, mensagem = ""):
     with open("usuarios.json", "w") as file:
         json.dump([], file)
     clients = []
@@ -164,8 +172,6 @@ async def main(usuarios, pausar = 30, modo = "msg", offset = 0):
             lista_clients.update({
                 client: await client.get_input_entity(grupo_principal.id)
             })
-    elif modo == "msg":
-        mensagem = input("Digite a mensagem: ")
         
     esperar = []
     
@@ -177,7 +183,8 @@ async def main(usuarios, pausar = 30, modo = "msg", offset = 0):
             entidade_principal = lista_clients[client]
         else:
             entidade_principal = None
-        task = asyncio.create_task(convida(client, grupo_alvo, entidade_principal, pausar, modo, offset))
+        task = asyncio.create_task(interagir(
+            client, grupo_alvo, entidade_principal, pausar, modo, offset, mensagem))
         
         esperar.append(task)
 

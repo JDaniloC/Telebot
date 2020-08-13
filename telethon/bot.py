@@ -12,7 +12,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 
 from tkinter import *
+from tkinter import ttk as t
 from tkinter import messagebox
+from tkinter.filedialog import askopenfilename
 import json, asyncio, sys, time
 from scraper import main
 from datetime import datetime
@@ -61,10 +63,35 @@ class Interface(Frame):
     def __init__(self, janela):
         super().__init__(janela)
         self.janela = janela
+        self.esquerda = t.Label(self)
+        self.direita = t.Label(self)
+
+        self.esquerda.pack(side = LEFT)
+        self.direita.pack(side = LEFT, padx = 5)
         self.pack(fill=X, padx=5, pady=5)
         self.widgets()
 
+    def seleciona_arquivo(self):
+        self.media.delete(0, END)
+        self.media.insert(0, askopenfilename())
+
     def widgets(self):
+
+        self.texto = Text(self.direita, width = 50, height = 30)
+        self.texto.pack(expand = True)
+        opcoes = t.Label(self.direita)
+        opcoes.pack()
+
+        self.media = t.Entry(opcoes)
+        self.isAudio = BooleanVar(value = False)
+        self.media.pack(side = LEFT)
+        t.Button(
+            opcoes, text = "Inserir arquivo", command = self.seleciona_arquivo
+        ).pack(side = LEFT)
+        t.Checkbutton(
+            opcoes, text = "É áudio/vídeo", variable = self.isAudio
+        ).pack(side = LEFT)
+
         self.entradas = []
         titulos = ["App api_id", "App api_hash", "Phone number"]
 
@@ -81,11 +108,11 @@ class Interface(Frame):
             variaveis = [api_id, api_hash, number]
 
             for index, titulo in enumerate(titulos):
-                Label(self, text = titulo).grid(row = i, column = index)
-                campo = Entry(self, textvariable = variaveis[index])
+                t.Label(self.esquerda, text = titulo).grid(row = i, column = index)
+                campo = t.Entry(self.esquerda, textvariable = variaveis[index])
                 # Comentar na versão paga
-                if i > 1:
-                    campo.config(state = 'disabled')
+                # if i > 1:
+                #     campo.config(state = 'disabled')
                 campo.grid(row = i + 1, column = index)
             self.entradas.append(client)
         
@@ -93,24 +120,24 @@ class Interface(Frame):
         self.pular = StringVar(value = "0")
         self.modo = StringVar(value = "add")
         
-        Label(self, text = "Pausa (segundos):").grid(
+        t.Label(self.esquerda, text = "Pausa (segundos):").grid(
             row = 23, column = 0)
-        Entry(self, textvariable = self.pausar, width = 5).grid(
+        t.Entry(self.esquerda, textvariable = self.pausar, width = 5).grid(
             row = 23, column = 0, columnspan = 3)
-        Label(self, text = "Pular:").grid(
+        t.Label(self.esquerda, text = "Pular:").grid(
             row = 23, column = 1, columnspan = 2)
-        Entry(self, textvariable = self.pular, width = 5).grid(
+        t.Entry(self.esquerda, textvariable = self.pular, width = 5).grid(
             row = 23, column = 2, columnspan = 3)
-        Radiobutton(self, text = "Adição", variable = self.modo, value = "add").grid(
+        t.Radiobutton(self.esquerda, text = "Adição", variable = self.modo, value = "add").grid(
             row = 24, column = 0)
-        Radiobutton(self, text = "Mensagem", variable = self.modo, value = "msg").grid(
+        t.Radiobutton(self.esquerda, text = "Mensagem", variable = self.modo, value = "msg").grid(
             row = 24, column = 1)
-        Radiobutton(self, text = "Captura", variable = self.modo, value = "save").grid(
+        t.Radiobutton(self.esquerda, text = "Captura", variable = self.modo, value = "save").grid(
             row = 24, column = 2)
-        Button(self, text = "Começar", command = self.comecar).grid(
-            row = 25, columnspan = 3)
+        t.Button(self.esquerda, text = "Começar", command = self.comecar).grid(
+            row = 25, columnspan = 3, pady = 5)
         # Comentar na versão trial
-        # self.carregar()
+        self.carregar()
 
     def carregar(self):
         try:
@@ -129,7 +156,7 @@ class Interface(Frame):
                 client = {key:value.get() for key, value in client.items()}
                 client['id'] = int(client['id'])
                 resultado.append(client)
-            elif client['number'].get() != "+55":
+            elif len(client['number'].get()) > 3:
                 client = captura_id_hash(client['number'].get())
                 resultado.append(client)
         
@@ -143,13 +170,20 @@ class Interface(Frame):
             pular = int(self.pular.get())
         except:
             messagebox.showinfo("Error", 
-                "Tempo de espera e quantidade de pessoas para pular precisam ser um número")
+                "Tempo de espera e quantidade de pessoas para pular precisam ser números")
             return
+
+        mensagem = {
+            "msg": self.texto.get(1.0, END),
+            "path": self.media.get(), 
+            "audio": self.isAudio.get()
+        }
 
         self.janela.destroy()
         loop = asyncio.get_event_loop()
         try:
-            loop.run_until_complete(main(resultado, pausar, self.modo.get(), pular))
+            loop.run_until_complete(main(
+                resultado, pausar, self.modo.get(), pular, mensagem))
         except Exception as e:
             print(e)
         

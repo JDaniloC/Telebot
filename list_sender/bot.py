@@ -12,6 +12,9 @@ from amanobot.loop import MessageLoop
 from amanobot.namedtuple import (InlineKeyboardMarkup, InlineKeyboardButton,
  ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove)
 
+
+bot_name = "🎯 M.M_007 Bot 🎯"
+
 def escreve_erros(erro):
     '''
     Guarda o traceback do erro em um arquivo.log
@@ -136,16 +139,16 @@ class Telegram:
                 if self.listas_de_entradas[atual]['on']:
                     for canal in self.channel:
                         try:
-                            self.bot.sendMessage(
+                            mensagem = self.bot.sendMessage(
                                 canal, lista_entradas[key]['msg'])
-                            
-                            # par =lista_entradas[key]['par']
-                            # direcao = lista_entradas[key]['direcao']
-                            # timeframe = lista_entradas[key]['periodo']
-                            # threading.Thread(
-                            #     target=self.mandar_resultado,
-                            #     args = (canal, par, 
-                            #     timeframe, direcao)).start()
+                            par =lista_entradas[key]['par']
+                            direcao = lista_entradas[key]['direcao']
+                            timeframe = lista_entradas[key]['periodo']
+                            gales = lista_entradas[key]['gale']
+                            threading.Thread(
+                                target=self.mandar_resultado,
+                                args = ((canal, mensagem['message_id']), 
+                                par, timeframe, direcao, gales)).start()
                         except Exception as e:
                             self.bot = amanobot.Bot(self.token)
                             indice -= 1
@@ -156,11 +159,12 @@ class Telegram:
         print("Terminou a transmissão")
 
     def mandar_resultado(
-        self, chat_id, paridade, timeframe, direcao):
+        self, message_id, paridade, timeframe, direcao, max_gales):
         timeframe *= 60
         hora_entrada = datetime.fromtimestamp(
-            time.time() + 300).strftime("%H:%M")
-        time.sleep((timeframe * 4) + 300)
+            time.time() + 300
+        ).strftime("%H:%M")
+        time.sleep((timeframe * 3) + 305 )
 
         velas = self.IQ.get_candles(
             paridade, timeframe, 4, time.time())
@@ -169,7 +173,9 @@ class Telegram:
             0 if x['close'] - x['open'] == 0 else 
             -1 for x in velas
         ]
+        print(velas)
 
+        texto_gales = f"🐔 Até {max_gales[0]} gales" if len(max_gales) == 1 else ""
         win = False
         gales = 0
         while gales < 3 and not win:
@@ -177,18 +183,23 @@ class Telegram:
             if not win:
                 gales += 1
         
+        if len(max_gales) == 1 and gales == 2 and max_gales[0] == 1:
+            win = False
+
         resposta = f"""
-📊 Par: {paridade}
-{'⬆' if direcao.lower() == "call" else '⬇'} Direção: {direcao}
-⏰ Tempo: {timeframe // 60}
-Horário: {hora_entrada}
+{bot_name}
+📊 Ativo: {paridade}
+⏰ Período: M{timeframe // 60}
+⏱ Horário: {hora_entrada}
+{'⬆' if direcao.lower() == "call" else '⬇'} Direção: {direcao.upper()}
+{texto_gales}
 Resultado: {(gales * '🐔') + '✅' if win else '❌'}
         """
         try:
-            self.bot.sendMessage(chat_id, resposta)
+            self.bot.editMessageText(message_id, resposta)
         except:
             self.bot = amanobot.Bot(self.token)
-            self.bot.sendMessage(chat_id, resposta)
+            self.bot.editMessageText(message_id, resposta)
 
     def formatar_entradas(self, tipo, periodo, comandos):
         '''
@@ -210,7 +221,7 @@ Resultado: {(gales * '🐔') + '✅' if win else '❌'}
                 key = str(indice)+"/"+str(dia)+"/"+hora
                 resultado[key] = {}
                 resultado[key]['msg'] = f'''
-🏁 -- ==W.S SINA'S== -- 🏁
+{bot_name}
 🔰 ENTRADA {hora}
 ⏱ Período: {periodo}
 📊 Ativo: {par}
@@ -218,6 +229,8 @@ Resultado: {(gales * '🐔') + '✅' if win else '❌'}
 {tipo}
                 '''
                 resultado[key]['par'] = par
+                resultado[key]['gale'] = [
+                    int(x) for x in tipo.split() if x.isdigit()]
                 resultado[key]['direcao'] = direcao.lower()
                 resultado[key]['periodo'] = int(periodo.strip("M"))
             except Exception as e:
