@@ -120,21 +120,30 @@ class Interface(Frame):
         self.pular = StringVar(value = "0")
         self.modo = StringVar(value = "add")
         
-        t.Label(self.esquerda, text = "Pausa (segundos):").grid(
-            row = 23, column = 0)
-        t.Entry(self.esquerda, textvariable = self.pausar, width = 5).grid(
-            row = 23, column = 0, columnspan = 3)
+        t.Label(self.esquerda, text = "Pausa (segundos):"
+            ).grid(row = 23, column = 0)
+        t.Entry(self.esquerda, textvariable = self.pausar, 
+            width = 5).grid(row = 23, column = 0, columnspan = 3)
         t.Label(self.esquerda, text = "Pular:").grid(
             row = 23, column = 1, columnspan = 2)
-        t.Entry(self.esquerda, textvariable = self.pular, width = 5).grid(
-            row = 23, column = 2, columnspan = 3)
-        t.Radiobutton(self.esquerda, text = "Adição", variable = self.modo, value = "add").grid(
+        t.Entry(self.esquerda, textvariable = self.pular, width = 5
+            ).grid(row = 23, column = 2, columnspan = 3)
+        t.Radiobutton(self.esquerda, text = "Adição", 
+            variable = self.modo, value = "add").grid(
             row = 24, column = 0)
-        t.Radiobutton(self.esquerda, text = "Mensagem", variable = self.modo, value = "msg").grid(
+        t.Radiobutton(self.esquerda, text = "Mensagem", 
+            variable = self.modo, value = "msg").grid(
             row = 24, column = 1)
-        t.Radiobutton(self.esquerda, text = "Captura", variable = self.modo, value = "save").grid(
+        t.Radiobutton(self.esquerda, text = "Captura", 
+            variable = self.modo, value = "save").grid(
             row = 24, column = 2)
-        t.Button(self.esquerda, text = "Começar", command = self.comecar).grid(
+
+        self.limitar = BooleanVar(value = False)
+        t.Checkbutton(self.esquerda, text = "Limitar", 
+            variable = self.limitar).grid(
+            row = 25, column = 0)
+        t.Button(self.esquerda, text = "Começar", 
+            command = self.comecar).grid(
             row = 25, columnspan = 3, pady = 5)
         # Comentar na versão trial
         self.carregar()
@@ -178,18 +187,19 @@ class Interface(Frame):
             "path": self.media.get(), 
             "audio": self.isAudio.get()
         }
+        limitar = self.limitar.get()
 
         self.janela.destroy()
         loop = asyncio.get_event_loop()
         try:
             loop.run_until_complete(main(
-                resultado, pausar, self.modo.get(), pular, mensagem))
+                resultado, pausar, self.modo.get(), pular, mensagem, limitar))
         except Exception as e:
             print(e)
         
         input("Programa finalizado")
 
-final = datetime(2020, 8, 14, 0, 0)
+final = datetime(2020, 9, 1, 0, 0)
 restante = final - datetime.now()
 if final.timestamp() - datetime.now().timestamp() > 0:
     print(str(restante).replace("days", "dias"))

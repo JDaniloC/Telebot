@@ -370,12 +370,12 @@ Resultado: {'🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else 
 
     def pegar_periodo(self, lista):
         for entrada in lista:
-            if "M1" in entrada:
-                return "M1"
+            if "M15" in entrada:
+                return "M15"
             elif "M5" in entrada:
                 return "M5"
-            elif "M15" in entrada:
-                return "M15"
+            elif "M1" in entrada:
+                return "M1"
             elif "M30" in entrada:
                 return "M30"
         return "M5"

@@ -72,9 +72,12 @@ def guarda_usuario(info):
     with open("usuarios.json", "w", encoding = "utf-8") as file:
         json.dump(lista, file, indent = 2)
 
+total_capturado = 0
+
 async def interagir(
-    client, grupo_alvo, entidade_principal, 
-    pausar, modo = "add", offset = 0, mensagem = {}):
+    client, grupo_alvo, entidade_principal, tempo_pausa, 
+    modo = "add", offset = 0, mensagem = {}, limitar = False):
+    global total_capturado
     print(f'Capturando membros... do {grupo_alvo.title}')
     cont = 0
     pausar = False
@@ -109,6 +112,9 @@ async def interagir(
                 await client(InviteToChannelRequest(entidade_principal, [usuario]))
             cont += 1
             pausar = True
+            if limitar and cont >= 40:
+                print("Preservando conta, parando aos 40.")
+                break
         except PeerFloodError:
             print("Muitas requisições... Usuário bloqueado, tente novamente mais tarde")
             break
@@ -132,11 +138,16 @@ async def interagir(
             traceback.print_exc()
             print("Erro inesparado, continuando operação...")
         if pausar:
-            await asyncio.sleep(pausar)
+            await asyncio.sleep(tempo_pausa)
             pausar = False
+    total_capturado += cont
     print(f"\nO bot atingiu {cont} membros no grupo {grupo_alvo.title}\n")
 
-async def main(usuarios, pausar = 30, modo = "msg", offset = 0, mensagem = ""):
+async def main(
+    usuarios, pausar = 30, modo = "msg", 
+    offset = 0, mensagem = "", limitar = False):
+    global total_capturado
+    
     with open("usuarios.json", "w") as file:
         json.dump([], file)
     clients = []
@@ -184,13 +195,15 @@ async def main(usuarios, pausar = 30, modo = "msg", offset = 0, mensagem = ""):
         else:
             entidade_principal = None
         task = asyncio.create_task(interagir(
-            client, grupo_alvo, entidade_principal, pausar, modo, offset, mensagem))
+            client, grupo_alvo, entidade_principal, 
+            pausar, modo, offset, mensagem, limitar))
         
         esperar.append(task)
 
         offset += 50
 
     await asyncio.wait(esperar)
+    print(f"Interagiu com um total de {total_capturado}")
 
 
 if __name__ == "__main__":
