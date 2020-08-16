@@ -318,8 +318,11 @@ Resultado: {'🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else 
                 query_id, text = "Modo mostrar lista")
 
             for options in self.listas_de_entradas.values():
+                resposta = ""
+                for entrada in options['lista'].values():
+                    resposta += entrada['msg']
                 self.bot.sendMessage(
-                    from_id, "\n".join(options['lista'].values()))
+                    from_id, resposta)
             self.bot.sendMessage(from_id, "Fim das listas.")
         elif query_data == "start":
             print("Entranho no modo de transmissão")
