@@ -178,7 +178,7 @@ class Telegram:
                 if abertas['turbo'][x]['open']])
         else:
             esta_aberto = (
-                abertas in abertas_digital or paridade in
+                paridade in abertas_digital or paridade in
                 [x for x in abertas['binary'] 
                 if abertas['binary'][x]['open']])
 
