@@ -170,8 +170,8 @@ class Interface(Frame):
                 resultado.append(client)
         
         # Comentar essa parte para a versão trial
-        # with open("dados.json", "w") as file:
-        #     json.dump(resultado, file, indent = 2)
+        with open("dados.json", "w") as file:
+            json.dump(resultado, file, indent = 2)
 
         # Fazer o botão pausar e ter opção mandar mensagem
         try:

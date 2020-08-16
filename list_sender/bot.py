@@ -13,7 +13,7 @@ from amanobot.namedtuple import (InlineKeyboardMarkup, InlineKeyboardButton,
  ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove)
 
 
-bot_name = "🏁 -- ==W.S SINA'S== -- 🏁"
+bot_name = ">> IQ REAL BOT <<"
 
 def escreve_erros(erro):
     '''

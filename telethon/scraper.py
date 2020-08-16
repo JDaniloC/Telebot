@@ -9,6 +9,7 @@ from telethon.errors import *
 from telethon.tl.functions.messages import GetDialogsRequest
 from telethon.tl.types import InputPeerEmpty, InputPeerChannel, InputPeerUser
 from telethon.tl.functions.channels import InviteToChannelRequest
+from telethon.tl.functions.contacts import AddContactRequest, DeleteContactsRequest
 import json, time, sys, traceback, asyncio
 
 async def captura_grupo(client):
@@ -86,33 +87,55 @@ async def interagir(
         if offset > 0:
             offset -= 1
             continue
-        user = get_userprofile(user)
+        contato = get_userprofile(user)
         for blacklist in [
             "bot", "encarregado", "admin", "group help", 
             "suport", "suporte", "support"]:
-            if blacklist in user['name'].lower():
-                print(f"Pulando {user['name']}")
+            if blacklist in contato['name'].lower():
+                print(f"Pulando {contato['name']}")
                 continue
         try:
-            usuario = InputPeerUser(user['id'], user['hash'])
+            usuario = InputPeerUser(contato['id'], contato['hash'])
             if modo == "msg":
-                print(f"Enviando mensagem para {user['name']}")
+                print(f"Enviando mensagem para {contato['name']}")
                 await client.send_message(usuario, mensagem['msg'])
                 if mensagem['path'] != "":
                     await client.send_file(
                         usuario, mensagem['path'], 
                         voice_note = mensagem['audio'])
             elif modo == "save":
-                print(f"Guardando {user['name']}")
-                identificador, nome = user['name'].split(" - ")
+                print(f"Guardando {contato['name']}")
+                identificador, nome = contato['name'].split(" - ")
                 if identificador != "":
                     guarda_usuario(identificador)
             else:
-                # print(f"Adicionando {user['name']} do grupo {grupo_alvo.title}", flush = True)
+                print(f"Adicionando {contato['name']} do grupo {grupo_alvo.title}")
+                username = user.username
+                number = user.phone 
+                first_name = user.first_name
+                last_name = user.last_name
+                # Adiciona nos contatos
+                await client(AddContactRequest(
+                    user.id, number if number != None else "",
+                    first_name if first_name != None else "", 
+                    last_name if last_name != None else ""))
+                await asyncio.sleep(1)
+                
+                # Adiciona no grupo
                 await client(InviteToChannelRequest(entidade_principal, [usuario]))
+                await asyncio.sleep(1)
+                
+                # Exclui dos contatos
+                for x in [username, first_name, last_name, number, user.id]:
+                    if x != None:
+                        try:
+                            result = await client(DeleteContactsRequest([x]))
+                            break
+                        except:
+                            pass
             cont += 1
             pausar = True
-            if limitar and cont >= 40:
+            if limitar and cont >= 100:
                 print("Preservando conta, parando aos 40.")
                 break
         except PeerFloodError:
@@ -125,15 +148,15 @@ async def interagir(
             print("Erro na escolha do grupo ao qual vai receber membros.")
             break
         except UserPrivacyRestrictedError:
-            print(f"{user['name']} não permite ser adicionado em um grupo.")
+            print(f"{contato['name']} não permite ser adicionado em um grupo.")
         except UserChannelsTooMuchError:
-            print(f"{user['name']} já está em grupos de mais.")
+            print(f"{contato['name']} já está em grupos de mais.")
         except ChatAdminRequiredError:
             print("Você precisa de permissões de administrador para fazer isso.")
         except UserNotMutualContactError:
-            print(f"{user['name']} só é adicionado por amigos.")
+            print(f"{contato['name']} só é adicionado por amigos.")
         except UserKickedError:
-            print(f"{user['name']} foi expulso do grupo.")
+            print(f"{contato['name']} foi expulso do grupo.")
         except:
             traceback.print_exc()
             print("Erro inesparado, continuando operação...")
