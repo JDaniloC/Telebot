@@ -13,7 +13,7 @@ from amanobot.namedtuple import (InlineKeyboardMarkup, InlineKeyboardButton,
  ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove)
 
 
-bot_name = ">> IQ REAL BOT <<"
+bot_name = "🎯 M.M_007 Bot 🎯"
 
 def escreve_erros(erro):
     '''
@@ -131,12 +131,19 @@ class Telegram:
         Função que percorre a lista de entradas e envia para o canal
         '''
         print("Começando a transmitir")
+        # Resultados
+        self.listas_de_entradas[atual]["win"] = 0
+        self.listas_de_entradas[atual]["loss"] = 0
+        self.listas_de_entradas[atual]["winsg"] = 0
+        hora_parcial = time.time()
+
         lista_entradas = self.listas_de_entradas[atual]['lista']
         keys = list(lista_entradas.keys())
         indice = 0
         while indice < len(keys):
             key = keys[indice]
-            if self.listas_de_entradas[atual]['on'] and self.esperarAte(chat_id, key):
+            if self.listas_de_entradas[atual]['on'] and self.esperarAte(
+                chat_id, key):
                 if self.listas_de_entradas[atual]['on']:
                     for canal in self.channel:
                         try:
@@ -150,11 +157,31 @@ class Telegram:
                             threading.Thread(
                                 target=self.mandar_resultado,
                                 args = ((canal, mensagem['message_id']), 
-                                par, hora, timeframe, direcao, gales)).start()
+                                par, hora, timeframe, direcao, gales,
+                                atual)).start()
                         except Exception as e:
                             self.bot = amanobot.Bot(self.token)
                             indice -= 1
                             time.sleep(1)
+                    
+                    if time.time() - hora_parcial > 3600:
+                        win = self.listas_de_entradas[atual]["win"]
+                        loss = self.listas_de_entradas[atual]["loss"]
+                        winsg = self.listas_de_entradas[atual]["winsg"]
+                        mensagem_parcial = f'''{bot_name} - Parcial
+    ✅ Vitórias {win}
+    ❌ Derrotas {loss}
+ 
+    ✅ Sem gale: {winsg}
+    🐔 Win Gale: {win - winsg}
+
+    🎯 Assertividade: {round(win / (win + loss) * 100, 2)}%
+                        '''
+                        try:
+                            self.bot.sendMessage(canal, mensagem_parcial)
+                        except:
+                            self.bot = amanobot.Bot(self.token)
+                            self.bot.sendMessage(canal, mensagem_parcial)
             indice += 1
         del self.listas_de_entradas[atual]
         self.bot.sendMessage(chat_id, "Transmissão finalizada")
@@ -162,7 +189,7 @@ class Telegram:
 
     def mandar_resultado(
         self, message_id, paridade, hora_entrada, 
-        timeframe, direcao, max_gales):
+        timeframe, direcao, max_gales, atual):
         time.sleep(300)
         timeframe *= 60
         espera = datetime.now().timestamp() + (timeframe * 3) + 5
@@ -213,6 +240,15 @@ class Telegram:
 {texto_gales}
 Resultado: {'🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else '❌'}
         """
+
+        # Salva informações
+        if win:
+            self.listas_de_entradas[atual]['win'] += 1
+            if gales == 0:
+                self.listas_de_entradas[atual]["winsg"] += 1
+        elif esta_aberto:
+            self.listas_de_entradas[atual]["loss"] += 1
+
         try:
             self.bot.editMessageText(message_id, resposta)
         except:
