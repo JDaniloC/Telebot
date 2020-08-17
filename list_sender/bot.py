@@ -165,10 +165,12 @@ class Telegram:
                             time.sleep(1)
                     
                     if time.time() - hora_parcial > 3600:
+                        hora_parcial = time.time()
                         win = self.listas_de_entradas[atual]["win"]
                         loss = self.listas_de_entradas[atual]["loss"]
                         winsg = self.listas_de_entradas[atual]["winsg"]
-                        mensagem_parcial = f'''{bot_name} - Parcial
+                        if win > 0 or loss > 0:
+                            mensagem_parcial = f'''{bot_name} - Parcial
     ✅ Vitórias {win}
     ❌ Derrotas {loss}
  
@@ -177,11 +179,11 @@ class Telegram:
 
     🎯 Assertividade: {round(win / (win + loss) * 100, 2)}%
                         '''
-                        try:
-                            self.bot.sendMessage(canal, mensagem_parcial)
-                        except:
-                            self.bot = amanobot.Bot(self.token)
-                            self.bot.sendMessage(canal, mensagem_parcial)
+                            try:
+                                self.bot.sendMessage(canal, mensagem_parcial)
+                            except:
+                                self.bot = amanobot.Bot(self.token)
+                                self.bot.sendMessage(canal, mensagem_parcial)
             indice += 1
         del self.listas_de_entradas[atual]
         self.bot.sendMessage(chat_id, "Transmissão finalizada")
