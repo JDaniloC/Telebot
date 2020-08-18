@@ -119,11 +119,11 @@ async def interagir(
                     user.id, number if number != None else "",
                     first_name if first_name != None else "", 
                     last_name if last_name != None else ""))
-                await asyncio.sleep(1)
+                await asyncio.sleep(10)
                 
                 # Adiciona no grupo
                 await client(InviteToChannelRequest(entidade_principal, [usuario]))
-                await asyncio.sleep(1)
+                await asyncio.sleep(10)
                 
                 # Exclui dos contatos
                 for x in [username, first_name, last_name, number, user.id]:
@@ -135,7 +135,7 @@ async def interagir(
                             pass
             cont += 1
             pausar = True
-            if limitar and cont >= 100:
+            if limitar and cont >= 40:
                 print("Preservando conta, parando aos 40.")
                 break
         except PeerFloodError:
