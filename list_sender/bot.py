@@ -9,6 +9,8 @@ from iqoptionapi.stable_api import IQ_Option
 import time, pprint, traceback, json, re, threading, sys
 from datetime import datetime, timedelta
 from amanobot.loop import MessageLoop
+from amanobot.exception import (
+    BotWasBlockedError, BotWasKickedError)
 from amanobot.namedtuple import (InlineKeyboardMarkup, InlineKeyboardButton,
  ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove)
 
@@ -159,6 +161,8 @@ class Telegram:
                                 args = ((canal, mensagem['message_id']), 
                                 par, hora, timeframe, direcao, gales,
                                 atual))
+                        except (BotWasBlockedError, BotWasKickedError):
+                            self.channel.remove(canal)
                         except Exception as e:
                             self.bot = amanobot.Bot(self.token)
                             indice -= 1
