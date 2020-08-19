@@ -188,15 +188,15 @@ class Telegram:
         timeframe = self.listas_de_entradas[atual]["timeframe"]
         if win > 0 or loss > 0:
             mensagem_parcial = f'''{bot_name}
-    Lista {gales} M{timeframe}
-    
-    ✅ Vitórias {win}
-    ❌ Derrotas {loss}
- 
-    ✅ Sem gale: {winsg}
-    🐔 Win Gale: {win - winsg}
+Lista {gales} {timeframe}
 
-    🎯 Assertividade: {round(win / (win + loss) * 100, 2)}%
+✅ Vitórias {win}
+❌ Derrotas {loss}
+
+✅ Sem gale: {winsg}
+🐔 Win Gale: {win - winsg}
+
+🎯 Assertividade: {round(win / (win + loss) * 100, 2)}%
                         '''
             try:
                 self.bot.sendMessage(canal, mensagem_parcial)
@@ -371,21 +371,22 @@ Resultado: {'🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else 
                 query_id, text = "Modo mostrar lista")
 
             for options in self.listas_de_entradas.values():
-                resposta = ""
-                for entrada in options['lista'].values():
-                    resposta += entrada['msg']
-                self.bot.sendMessage(
-                    from_id, resposta)
+                if not options['deleted']:
+                    resposta = ""
+                    for entrada in options['lista'].values():
+                        resposta += entrada['msg']
+                    self.bot.sendMessage(
+                        from_id, resposta)
             self.bot.sendMessage(from_id, "Fim das listas.")
         elif query_data == "start":
             print("Entranho no modo de transmissão")
             self.bot.answerCallbackQuery(
                 query_id, text = "Modo enviar lista")
-
             opcoes = []
             for key, value in self.listas_de_entradas.items():
-                if not value['on']:
-                    opcoes.append(str(key) + " - " + value['nome'])
+                if not value['on'] and not value['deleted']:
+                    opcoes.append(
+                        str(key) + " - " + value['nome'])
             botoes = []
             for opcao in opcoes:
                 botoes.append([KeyboardButton( text = opcao )])
@@ -399,8 +400,11 @@ Resultado: {'🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else 
         elif query_data == "stop":
             opcoes = []
             for key, value in self.listas_de_entradas.items():
-                if value['on']:
-                    opcoes.append(str(key) + " - " + value['nome'])
+                if value['on'] and not value['deleted']:
+                    opcoes.append(
+                        str(key) + " - " + value['nome'])
+                    value['deleted'] = True
+
             botoes = []
             for opcao in opcoes:
                 botoes.append([KeyboardButton( text = opcao )])
@@ -418,9 +422,9 @@ Resultado: {'🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else 
 
     def pegar_gales(self, lista):
         for entrada in lista:
-            if "1 gal" in entrada:
+            if "1 gal" in entrada.lower():
                 return "🐔 Até 1 gale"
-            elif "2 gal" in entrada:
+            elif "2 gal" in entrada.lower():
                 return "🐔 Até 2 gales"
         return ""
 
@@ -472,7 +476,8 @@ Resultado: {'🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else 
                         "gales": tipo,
                         "timeframe": periodo,
                         "lista": self.formatar_entradas(
-                            tipo, periodo, entradas)
+                            tipo, periodo, entradas),
+                        "deleted": False
                     }
                     self.esperar_lista = False
                     self.bot.sendMessage(chat_id, "Lista salva")
