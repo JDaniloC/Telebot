@@ -137,6 +137,7 @@ class Telegram:
         self.listas_de_entradas[atual]["win"] = 0
         self.listas_de_entradas[atual]["loss"] = 0
         self.listas_de_entradas[atual]["winsg"] = 0
+        self.listas_de_entradas[atual]["closed"] = 0
         hora_parcial = time.time()
 
         lista_entradas = self.listas_de_entradas[atual]['lista']
@@ -160,7 +161,7 @@ class Telegram:
                                 target=self.mandar_resultado,
                                 args = ((canal, mensagem['message_id']), 
                                 par, hora, timeframe, direcao, gales,
-                                atual)).start()
+                                atual, indice)).start()
                         except (BotWasBlockedError, BotWasKickedError):
                             self.channel.remove(canal)
                         except Exception as e:
@@ -176,7 +177,9 @@ class Telegram:
         for canal in self.channel:
             self.mandar_parcial(canal, atual)
 
-        del self.listas_de_entradas[atual]
+        if not self.listas_de_entradas[atual]['on']:
+            del self.listas_de_entradas[atual]
+
         self.bot.sendMessage(chat_id, "Transmissão finalizada")
         print("Terminou a transmissão")
 
@@ -206,7 +209,7 @@ Lista {gales} {timeframe}
 
     def mandar_resultado(
         self, message_id, paridade, hora_entrada, 
-        timeframe, direcao, max_gales, atual):
+        timeframe, direcao, max_gales, atual, indice):
         time.sleep(300)
         timeframe *= 60
         espera = datetime.now().timestamp() + (timeframe * 3) + 5
@@ -257,14 +260,19 @@ Lista {gales} {timeframe}
 {texto_gales}
 Resultado: {'🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else '❌'}
         """
-
-        # Salva informações
-        if win:
-            self.listas_de_entradas[atual]['win'] += 1
-            if gales == 0:
-                self.listas_de_entradas[atual]["winsg"] += 1
-        elif esta_aberto:
-            self.listas_de_entradas[atual]["loss"] += 1
+        try:
+            # Salva informações
+            if win:
+                self.listas_de_entradas[atual]['win'] += 1
+                if gales == 0:
+                    self.listas_de_entradas[atual]["winsg"] += 1
+            elif esta_aberto:
+                self.listas_de_entradas[atual]["loss"] += 1
+            
+            if indice == len(self.listas_de_entradas[atual]['lista']) - 1:
+                del self.listas_de_entradas[atual]
+        except:
+            pass
 
         try:
             self.bot.editMessageText(message_id, resposta)
