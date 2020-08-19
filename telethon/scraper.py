@@ -119,11 +119,11 @@ async def interagir(
                     user.id, number if number != None else "",
                     first_name if first_name != None else "", 
                     last_name if last_name != None else ""))
-                await asyncio.sleep(30)
+                await asyncio.sleep(60)
                 
                 # Adiciona no grupo
                 await client(InviteToChannelRequest(entidade_principal, [usuario]))
-                await asyncio.sleep(30)
+                await asyncio.sleep(60)
                 
                 # Exclui dos contatos
                 for x in [username, first_name, last_name, number, user.id]:
