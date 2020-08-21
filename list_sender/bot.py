@@ -133,11 +133,29 @@ class Telegram:
         Função que percorre a lista de entradas e envia para o canal
         '''
         print("Começando a transmitir")
+        self.listas_de_entradas[atual]['id'] = {}
+        for canal in self.channel:    
+            try:
+                mensagem = self.bot.sendMessage(
+                    canal, "Isso é um teste")
+            except (BotWasBlockedError, BotWasKickedError):
+                self.channel.remove(canal)
+                mensagem = None
+            except Exception as e:
+                print(e)
+                self.bot = amanobot.Bot(self.token)
+                mensagem = self.bot.sendMessage(
+                    canal, "Isso é um teste")
+            
+            self.listas_de_entradas[atual]['id'][canal] = (
+                canal, mensagem['message_id'])
+        
         # Resultados
         self.listas_de_entradas[atual]["win"] = 0
         self.listas_de_entradas[atual]["loss"] = 0
         self.listas_de_entradas[atual]["winsg"] = 0
         self.listas_de_entradas[atual]["closed"] = 0
+        self.listas_de_entradas[atual]['result'] = ""
         hora_parcial = time.time()
 
         lista_entradas = self.listas_de_entradas[atual]['lista']
@@ -172,6 +190,7 @@ class Telegram:
                         if time.time() - hora_parcial > (3600 * 3):
                             hora_parcial = time.time()
                             self.mandar_parcial(canal, atual)
+                            self.mandar_completa(atual)
             indice += 1
         
         for canal in self.channel:
@@ -183,17 +202,39 @@ class Telegram:
         self.bot.sendMessage(chat_id, "Transmissão finalizada")
         print("Terminou a transmissão")
 
+    def mandar_completa(self, atual):
+        win = self.listas_de_entradas[atual]["win"]
+        loss = self.listas_de_entradas[atual]["loss"]
+        timeframe = self.listas_de_entradas[atual]['timeframe']
+        gales = self.listas_de_entradas[atual]['gales']
+        result = self.listas_de_entradas[atual]['result']
+        resposta = f"""🚀 Resultado do dia 🚀
+        {timeframe} {gales}
+
+{result}
+
+🎯 Assertividade: {round(win / (win + loss) * 100, 2)}%"""
+        for canal in self.channel:
+            message_id = self.listas_de_entradas[atual]['id'][canal]
+            try:
+                self.bot.editMessageText(message_id, resposta)
+            except:
+                self.bot = amanobot.Bot(self.token)
+                self.bot.editMessageText(message_id, resposta)
+
     def mandar_parcial(self, canal, atual):
         win = self.listas_de_entradas[atual]["win"]
         loss = self.listas_de_entradas[atual]["loss"]
         winsg = self.listas_de_entradas[atual]["winsg"]
         gales = self.listas_de_entradas[atual]["gales"]
         timeframe = self.listas_de_entradas[atual]["timeframe"]
+        fechados = self.listas_de_entradas[atual]["closed"]
         if win > 0 or loss > 0:
             mensagem_parcial = f'''{bot_name}
 Lista {gales} {timeframe}
 
 ✅ Vitórias {win}
+🔒 Fechados {fechados}
 ❌ Derrotas {loss}
 
 ✅ Sem gale: {winsg}
@@ -251,34 +292,45 @@ Lista {gales} {timeframe}
         if len(max_gales) == 1 and gales == 2 and max_gales[0] == 1:
             win = False
 
+        ordem = '⬆' if direcao.lower() == "call" else '⬇'
+        resultado = '🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else '❌'
+
         resposta = f"""
 {bot_name}
 📊 Ativo: {paridade}
 ⏰ Período: M{timeframe // 60}
 ⏱ Horário: {hora_entrada}
-{'⬆' if direcao.lower() == "call" else '⬇'} Direção: {direcao.upper()}
+{ordem} Direção: {direcao.upper()}
 {texto_gales}
-Resultado: {'🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else '❌'}
+Resultado: {resultado}
         """
         try:
             # Salva informações
+            self.listas_de_entradas[atual]['result'] += (
+                f"{hora_entrada} {paridade} {direcao.upper()} {resultado}\n")
             if win:
                 self.listas_de_entradas[atual]['win'] += 1
                 if gales == 0:
                     self.listas_de_entradas[atual]["winsg"] += 1
             elif esta_aberto:
                 self.listas_de_entradas[atual]["loss"] += 1
-            
-            if indice == len(self.listas_de_entradas[atual]['lista']) - 1:
-                del self.listas_de_entradas[atual]
-        except:
-            pass
+            else:
+                self.listas_de_entradas[atual]["closed"] += 1
+
+            self.mandar_completa(atual)
+        except Exception as e:
+            print(type(e), e)
 
         try:
             self.bot.editMessageText(message_id, resposta)
         except:
             self.bot = amanobot.Bot(self.token)
             self.bot.editMessageText(message_id, resposta)
+        
+        if indice == len(self.listas_de_entradas[atual]['lista']) - 1:
+            for canal in self.channel:
+                self.mandar_parcial(canal, atual)
+            del self.listas_de_entradas[atual]
 
     def formatar_entradas(self, tipo, periodo, comandos):
         '''
@@ -313,6 +365,7 @@ Resultado: {'🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else 
                     int(x) for x in tipo.split() if x.isdigit()]
                 resultado[key]['direcao'] = direcao.lower()
                 resultado[key]['periodo'] = int(periodo.strip("M"))
+                resultado[key]['result'] = "?"
             except Exception as e:
                 print("Não entendi a entrada:", comando)
         return resultado
