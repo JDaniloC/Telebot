@@ -12,7 +12,7 @@ from telethon.tl.functions.channels import InviteToChannelRequest
 from telethon.tl.functions.contacts import AddContactRequest, DeleteContactsRequest
 import json, time, sys, traceback, asyncio
 
-async def captura_grupo(client):
+async def captura_grupo(client, escolha = None):
     '''
     Captura um grupo da lista de conversas do client
     '''
@@ -34,6 +34,8 @@ async def captura_grupo(client):
         try:
             if chat.megagroup == True:
                 grupos.append(chat)
+                if escolha != None and escolha.title == chat.title:
+                    return chat
         except:
             continue
 
@@ -77,7 +79,7 @@ total_capturado = 0
 
 async def interagir(
     client, grupo_alvo, entidade_principal, tempo_pausa, 
-    modo = "add", offset = 0, mensagem = {}, limitar = False):
+    modo = "add", offset = 0, mensagem = {}, limitar = 200):
     global total_capturado
     print(f'Capturando membros... do {grupo_alvo.title}')
     cont = 0
@@ -110,32 +112,32 @@ async def interagir(
                     guarda_usuario(identificador)
             else:
                 print(f"Adicionando {contato['name']} do grupo {grupo_alvo.title}")
-                username = user.username
-                number = user.phone 
-                first_name = user.first_name
-                last_name = user.last_name
-                # Adiciona nos contatos
-                await client(AddContactRequest(
-                    user.id, number if number != None else "",
-                    first_name if first_name != None else f"{cont}", 
-                    last_name if last_name != None else ""))
-                await asyncio.sleep(60)
+                # username = user.username
+                # number = user.phone 
+                # first_name = user.first_name
+                # last_name = user.last_name
+                # # Adiciona nos contatos
+                # await client(AddContactRequest(
+                #     user.id, number if number != None else "",
+                #     first_name if first_name != None else f"{cont}", 
+                #     last_name if last_name != None else ""))
+                # await asyncio.sleep(200)
                 
                 # Adiciona no grupo
                 await client(InviteToChannelRequest(entidade_principal, [usuario]))
-                await asyncio.sleep(60)
                 
-                # Exclui dos contatos
-                for x in [username, first_name, last_name, number, user.id]:
-                    if x != None:
-                        try:
-                            result = await client(DeleteContactsRequest([x]))
-                            break
-                        except:
-                            pass
+                # # Exclui dos contatos
+                # await asyncio.sleep(200)
+                # for x in [username, first_name, last_name, number, user.id]:
+                #     if x != None:
+                #         try:
+                #             result = await client(DeleteContactsRequest([x]))
+                #             break
+                #         except:
+                #             pass
             cont += 1
             pausar = True
-            if limitar and cont >= 40:
+            if cont >= limitar:
                 print("Preservando conta, parando aos 40.")
                 break
         except PeerFloodError:
@@ -168,7 +170,7 @@ async def interagir(
 
 async def main(
     usuarios, pausar = 30, modo = "msg", 
-    offset = 0, mensagem = "", limitar = False):
+    offset = 0, mensagem = "", limitar = 50):
     global total_capturado
     
     with open("usuarios.json", "w") as file:
@@ -199,9 +201,10 @@ async def main(
 
     lista_clients = {}
     if modo == "add":
+        grupo_principal = None
         for client in clients:
             print("Escolha o grupo que vai RECEBER os membros: ")
-            grupo_principal = await captura_grupo(client)
+            grupo_principal = await captura_grupo(client, grupo_principal)
 
             lista_clients.update({
                 client: await client.get_input_entity(grupo_principal.id)
@@ -210,8 +213,9 @@ async def main(
     esperar = []
     
     print("\nEscolha um grupo para cada bot PEGAR membros:")
+    grupo_alvo = None
     for client in clients:
-        grupo_alvo = await captura_grupo(client)
+        grupo_alvo = await captura_grupo(client, grupo_alvo)
 
         if modo == "add":
             entidade_principal = lista_clients[client]
@@ -223,7 +227,7 @@ async def main(
         
         esperar.append(task)
 
-        offset += 50
+        offset += limitar
 
     await asyncio.wait(esperar)
     print(f"Interagiu com um total de {total_capturado}")

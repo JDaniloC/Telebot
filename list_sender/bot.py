@@ -137,7 +137,7 @@ class Telegram:
         for canal in self.channel:    
             try:
                 mensagem = self.bot.sendMessage(
-                    canal, "Isso é um teste")
+                    canal, f"{bot_name}\nTransmissão iniciada")
             except (BotWasBlockedError, BotWasKickedError):
                 self.channel.remove(canal)
                 mensagem = None
@@ -145,7 +145,7 @@ class Telegram:
                 print(e)
                 self.bot = amanobot.Bot(self.token)
                 mensagem = self.bot.sendMessage(
-                    canal, "Isso é um teste")
+                    canal, f"{bot_name}\nTransmissão iniciada")
             
             self.listas_de_entradas[atual]['id'][canal] = (
                 canal, mensagem['message_id'])
@@ -160,38 +160,46 @@ class Telegram:
 
         lista_entradas = self.listas_de_entradas[atual]['lista']
         keys = list(lista_entradas.keys())
-        indice = 0
-        while indice < len(keys):
-            key = keys[indice]
+        for key in keys:
             if self.listas_de_entradas[atual]['on'] and self.esperarAte(
                 chat_id, key):
                 if self.listas_de_entradas[atual]['on']:
-                    for canal in self.channel:
+                    i = 0
+                    while i < len(self.channel):
+                        print(self.channel, i)
                         try:
                             mensagem = self.bot.sendMessage(
-                                canal, lista_entradas[key]['msg'])
+                                self.channel[i], 
+                                lista_entradas[key]['msg'])
                             par = lista_entradas[key]['par']
                             hora = lista_entradas[key]['hora']
                             direcao = lista_entradas[key]['direcao']
                             timeframe = lista_entradas[key]['periodo']
                             gales = lista_entradas[key]['gale']
+                            apagar = keys[-1] == key
                             threading.Thread(
                                 target=self.mandar_resultado,
-                                args = ((canal, mensagem['message_id']), 
-                                par, hora, timeframe, direcao, gales,
-                                atual, indice)).start()
-                        except (BotWasBlockedError, BotWasKickedError):
-                            self.channel.remove(canal)
+                                args = ((self.channel[i], 
+                                    mensagem['message_id']), 
+                                    par, hora, timeframe, 
+                                    direcao, gales,
+                                    atual, apagar)).start()
+                            if (
+                            time.time() - hora_parcial > 10 and
+                            len(self.channel) > 0): # (3600 * 3):
+                                hora_parcial = time.time()
+                                self.mandar_parcial(
+                                    self.channel[i], atual)
+                                self.mandar_completa(atual)
+                            i += 1
+                        except (BotWasBlockedError, 
+                                BotWasKickedError):
+                            self.channel.remove(
+                                self.channel[i])
                         except Exception as e:
+                            print(e)
                             self.bot = amanobot.Bot(self.token)
-                            indice -= 1
                             time.sleep(1)
-                    
-                        if time.time() - hora_parcial > (3600 * 3):
-                            hora_parcial = time.time()
-                            self.mandar_parcial(canal, atual)
-                            self.mandar_completa(atual)
-            indice += 1
         
         for canal in self.channel:
             self.mandar_parcial(canal, atual)
@@ -208,19 +216,21 @@ class Telegram:
         timeframe = self.listas_de_entradas[atual]['timeframe']
         gales = self.listas_de_entradas[atual]['gales']
         result = self.listas_de_entradas[atual]['result']
+        assertividade = win / (win + loss) * 100 if win + loss > 0 else 100
         resposta = f"""🚀 Resultado do dia 🚀
         {timeframe} {gales}
 
 {result}
 
-🎯 Assertividade: {round(win / (win + loss) * 100, 2)}%"""
+🎯 Assertividade: {round(assertividade, 2)}%"""
         for canal in self.channel:
             message_id = self.listas_de_entradas[atual]['id'][canal]
             try:
                 self.bot.editMessageText(message_id, resposta)
-            except:
-                self.bot = amanobot.Bot(self.token)
-                self.bot.editMessageText(message_id, resposta)
+            except Exception as e:
+                if "modified" not in str(e):
+                    self.bot = amanobot.Bot(self.token)
+                    self.bot.editMessageText(message_id, resposta)
 
     def mandar_parcial(self, canal, atual):
         win = self.listas_de_entradas[atual]["win"]
@@ -250,7 +260,7 @@ Lista {gales} {timeframe}
 
     def mandar_resultado(
         self, message_id, paridade, hora_entrada, 
-        timeframe, direcao, max_gales, atual, indice):
+        timeframe, direcao, max_gales, atual, apagar):
         time.sleep(300)
         timeframe *= 60
         espera = datetime.now().timestamp() + (timeframe * 3) + 5
@@ -327,7 +337,7 @@ Resultado: {resultado}
             self.bot = amanobot.Bot(self.token)
             self.bot.editMessageText(message_id, resposta)
         
-        if indice == len(self.listas_de_entradas[atual]['lista']) - 1:
+        if apagar:
             for canal in self.channel:
                 self.mandar_parcial(canal, atual)
             del self.listas_de_entradas[atual]
@@ -570,6 +580,7 @@ Resultado: {resultado}
                     self.channel.append(comando['chat']['id'])
                 elif remover and comando['chat']['id'] in self.channel:
                     self.channel.remove(comando['chat']['id'])
+                pprint.pprint(self.channel)
             else:
                 pprint.pprint(comando)
 

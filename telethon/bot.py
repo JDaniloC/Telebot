@@ -119,15 +119,20 @@ class Interface(Frame):
         self.pausar = StringVar(value = "0")
         self.pular = StringVar(value = "0")
         self.modo = StringVar(value = "add")
+        self.limitar = StringVar(value = 40)
         
         t.Label(self.esquerda, text = "Pausa (segundos):"
             ).grid(row = 23, column = 0)
         t.Entry(self.esquerda, textvariable = self.pausar, 
-            width = 5).grid(row = 23, column = 0, columnspan = 3)
+            width = 5).grid(row = 23, column = 1, sticky = "w")
         t.Label(self.esquerda, text = "Pular:").grid(
-            row = 23, column = 1, columnspan = 2)
+            row = 23, column = 1)
         t.Entry(self.esquerda, textvariable = self.pular, width = 5
-            ).grid(row = 23, column = 2, columnspan = 3)
+            ).grid(row = 23, column = 1, sticky = "e")
+        t.Label(self.esquerda, text = "Limite:"
+            ).grid(row = 23, column = 2, sticky = "w")
+        t.Entry(self.esquerda, textvariable = self.limitar, 
+            width = 10).grid(row = 23, column = 2, sticky = "e")
         t.Radiobutton(self.esquerda, text = "Adição", 
             variable = self.modo, value = "add").grid(
             row = 24, column = 0)
@@ -138,10 +143,6 @@ class Interface(Frame):
             variable = self.modo, value = "save").grid(
             row = 24, column = 2)
 
-        self.limitar = BooleanVar(value = False)
-        t.Checkbutton(self.esquerda, text = "Limitar", 
-            variable = self.limitar).grid(
-            row = 25, column = 0)
         t.Button(self.esquerda, text = "Começar", 
             command = self.comecar).grid(
             row = 25, columnspan = 3, pady = 5)
@@ -187,7 +188,7 @@ class Interface(Frame):
             "path": self.media.get(), 
             "audio": self.isAudio.get()
         }
-        limitar = self.limitar.get()
+        limitar = int(self.limitar.get())
 
         self.janela.destroy()
         loop = asyncio.get_event_loop()
