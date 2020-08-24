@@ -185,8 +185,8 @@ class Telegram:
                                     direcao, gales,
                                     atual, apagar)).start()
                             if (
-                            time.time() - hora_parcial > 10 and
-                            len(self.channel) > 0): # (3600 * 3):
+                            time.time() - hora_parcial > (3600 * 3) and
+                            len(self.channel) > 0):
                                 hora_parcial = time.time()
                                 self.mandar_parcial(
                                     self.channel[i], atual)
