@@ -121,13 +121,13 @@ async def interagir(
                 #     user.id, number if number != None else "",
                 #     first_name if first_name != None else f"{cont}", 
                 #     last_name if last_name != None else ""))
-                # await asyncio.sleep(200)
+                # await asyncio.sleep(30)
                 
                 # Adiciona no grupo
                 await client(InviteToChannelRequest(entidade_principal, [usuario]))
                 
                 # # Exclui dos contatos
-                # await asyncio.sleep(200)
+                # await asyncio.sleep(60)
                 # for x in [username, first_name, last_name, number, user.id]:
                 #     if x != None:
                 #         try:
@@ -138,7 +138,7 @@ async def interagir(
             cont += 1
             pausar = True
             if cont >= limitar:
-                print("Preservando conta, parando aos 40.")
+                print(f"Preservando conta, parando aos {limitar}.")
                 break
         except PeerFloodError:
             print("Muitas requisições... Usuário bloqueado, tente novamente mais tarde")

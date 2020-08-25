@@ -15,7 +15,7 @@ from amanobot.namedtuple import (InlineKeyboardMarkup, InlineKeyboardButton,
  ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove)
 
 
-bot_name = "🎯 M.M_007 Bot 🎯"
+bot_name = "🏁 -- ==W.S SINA'S== -- 🏁"
 
 def escreve_erros(erro):
     '''
@@ -137,7 +137,7 @@ class Telegram:
         for canal in self.channel:    
             try:
                 mensagem = self.bot.sendMessage(
-                    canal, f"{bot_name}\nTransmissão iniciada")
+                    canal, f"{bot_name}\nTransmissão iniciada\nNão delete essa mensagem.")
             except (BotWasBlockedError, BotWasKickedError):
                 self.channel.remove(canal)
                 mensagem = None
@@ -145,7 +145,7 @@ class Telegram:
                 print(e)
                 self.bot = amanobot.Bot(self.token)
                 mensagem = self.bot.sendMessage(
-                    canal, f"{bot_name}\nTransmissão iniciada")
+                    canal, f"{bot_name}\nTransmissão iniciada\nNão delete essa mensagem.")
             
             self.listas_de_entradas[atual]['id'][canal] = (
                 canal, mensagem['message_id'])
