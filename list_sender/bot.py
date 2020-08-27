@@ -15,7 +15,7 @@ from amanobot.namedtuple import (InlineKeyboardMarkup, InlineKeyboardButton,
  ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove)
 
 
-bot_name = ">> IQ REAL BOT <<"
+bot_name = "🏁 -- ==W.S SINA'S== -- 🏁"
 
 def escreve_erros(erro):
     '''
@@ -183,8 +183,8 @@ class Telegram:
                                     mensagem['message_id']), 
                                     par, hora, timeframe, 
                                     direcao, gales,
-                                    atual, apagar)).start()
-                            if (
+                                    atual, apagar))
+                            if (False and
                             time.time() - hora_parcial > (3600 * 3) and
                             len(self.channel) > 0):
                                 hora_parcial = time.time()
@@ -197,12 +197,16 @@ class Telegram:
                             self.channel.remove(
                                 self.channel[i])
                         except Exception as e:
-                            print(e)
-                            self.bot = amanobot.Bot(self.token)
-                            time.sleep(1)
-        
-        for canal in self.channel:
-            self.mandar_parcial(canal, atual)
+                            if "rights" in str(e):
+                                self.bot.sendMessage(chat_id, 
+                                "Preciso ter permissões para enviar mensagem, me coloque como admnistrador.")
+                            else:
+                                print(e)
+                                self.bot = amanobot.Bot(self.token)
+                                time.sleep(1)
+            
+        # for canal in self.channel:
+        #     self.mandar_parcial(canal, atual)
 
         if not self.listas_de_entradas[atual]['on']:
             del self.listas_de_entradas[atual]
@@ -217,15 +221,12 @@ class Telegram:
         gales = self.listas_de_entradas[atual]['gales']
         result = self.listas_de_entradas[atual]['result']
         assertividade = win / (win + loss) * 100 if win + loss > 0 else 100
-        resposta = f"""🚀 Parcial do dia 🚀
+        resposta = f"""🚀 Resultado do dia 🚀
         {timeframe} {gales}
 
 {result}
 
-🎯 Assertividade: {round(assertividade, 2)}%
-
-© IQ Real Analyze 
-🔐 Produto 100% original🔐"""
+🎯 Assertividade: {round(assertividade, 2)}%"""
         for canal in self.channel:
             message_id = self.listas_de_entradas[atual]['id'][canal]
             try:
@@ -243,9 +244,7 @@ class Telegram:
         timeframe = self.listas_de_entradas[atual]["timeframe"]
         fechados = self.listas_de_entradas[atual]["closed"]
         if win > 0 or loss > 0:
-            mensagem_parcial = f'''🚀 PARCIAL DO DIA 🚀
-
-{bot_name}
+            mensagem_parcial = f'''{bot_name}
 Lista {gales} {timeframe}
 
 ✅ Vitórias {win}
@@ -256,9 +255,7 @@ Lista {gales} {timeframe}
 🐔 Win Gale: {win - winsg}
 
 🎯 Assertividade: {round(win / (win + loss) * 100, 2)}%
-
-© IQ Real Analyze 
-🔐 Produto 100% original🔐'''
+                        '''
             try:
                 self.bot.sendMessage(canal, mensagem_parcial)
             except:
@@ -312,8 +309,7 @@ Lista {gales} {timeframe}
         ordem = '⬆' if direcao.lower() == "call" else '⬇'
         resultado = '🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else '❌'
 
-        resposta = f"""📈 Novo Sinal Em Tempo Real
-
+        resposta = f"""
 {bot_name}
 📊 Ativo: {paridade}
 ⏰ Período: M{timeframe // 60}
@@ -321,9 +317,7 @@ Lista {gales} {timeframe}
 {ordem} Direção: {direcao.upper()}
 {texto_gales}
 Resultado: {resultado}
-        
-© IQ Real Analyze 
-🔐 Produto 100% original🔐"""
+        """
         try:
             # Salva informações
             self.listas_de_entradas[atual]['result'] += (
@@ -372,17 +366,12 @@ Resultado: {resultado}
                 key = str(indice)+"/"+str(dia)+"/"+hora
                 resultado[key] = {}
                 resultado[key]['msg'] = f'''
-📈 Novo Sinal Em Tempo Real
-
 {bot_name}
 🔰 ENTRADA {hora}
 ⏱ Período: {periodo}
 📊 Ativo: {par}
 {"⬆" if direcao.lower() == "call" else "⬇"} Direção: {direcao.upper()}
 {tipo}
-
-© IQ Real Analyze 
-🔐 Produto 100% original🔐
                 '''
                 resultado[key]['par'] = par
                 resultado[key]['hora'] = hora

@@ -1,8 +1,13 @@
 {
-  "token": "1185308813:AAEWFadUURuy4DDHBllb-GNTYb-ovgZ9aGY",
-  "canal": [],
+  "token": "1154451890:AAGYUnsPWDf2Jth-iGRuYDgD3DuKJNsnG5Y",
+  "canal": [
+    -1001240285021,
+    -484249643,
+    -1001181862430
+  ],
   "id": [
     756287805,
-    1095377067
+    802072271,
+    223693686
   ]
 }
