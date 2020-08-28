@@ -6,16 +6,14 @@ except ModuleNotFoundError:
     import amanobot
 
 from iqoptionapi.stable_api import IQ_Option
-import time, pprint, traceback, json, re, threading, sys
-from datetime import datetime, timedelta
+import time, pprint, traceback, json, re, threading
+from datetime import datetime
 from amanobot.loop import MessageLoop
 from amanobot.exception import (
     BotWasBlockedError, BotWasKickedError)
 from amanobot.namedtuple import (InlineKeyboardMarkup, InlineKeyboardButton,
  ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove)
-
-
-bot_name = "🏁 -- ==W.S SINA'S== -- 🏁"
+import templates
 
 def escreve_erros(erro):
     '''
@@ -137,7 +135,7 @@ class Telegram:
         for canal in self.channel:    
             try:
                 mensagem = self.bot.sendMessage(
-                    canal, f"{bot_name}\nTransmissão iniciada\nNão delete essa mensagem.")
+                    canal, f"Transmissão iniciada\nNão delete essa mensagem.")
             except (BotWasBlockedError, BotWasKickedError):
                 self.channel.remove(canal)
                 mensagem = None
@@ -145,7 +143,7 @@ class Telegram:
                 print(e)
                 self.bot = amanobot.Bot(self.token)
                 mensagem = self.bot.sendMessage(
-                    canal, f"{bot_name}\nTransmissão iniciada\nNão delete essa mensagem.")
+                    canal, f"Transmissão iniciada\nNão delete essa mensagem.")
             
             self.listas_de_entradas[atual]['id'][canal] = (
                 canal, mensagem['message_id'])
@@ -183,10 +181,9 @@ class Telegram:
                                     mensagem['message_id']), 
                                     par, hora, timeframe, 
                                     direcao, gales,
-                                    atual, apagar))
-                            if (False and
-                            time.time() - hora_parcial > (3600 * 3) and
-                            len(self.channel) > 0):
+                                    atual, apagar)).start()
+                            if (len(self.channel) > 0 and
+                            time.time() - hora_parcial > (3600 * 3)):
                                 hora_parcial = time.time()
                                 self.mandar_parcial(
                                     self.channel[i], atual)
@@ -205,8 +202,8 @@ class Telegram:
                                 self.bot = amanobot.Bot(self.token)
                                 time.sleep(1)
             
-        # for canal in self.channel:
-        #     self.mandar_parcial(canal, atual)
+        for canal in self.channel:
+            self.mandar_parcial(canal, atual)
 
         if not self.listas_de_entradas[atual]['on']:
             del self.listas_de_entradas[atual]
@@ -221,12 +218,10 @@ class Telegram:
         gales = self.listas_de_entradas[atual]['gales']
         result = self.listas_de_entradas[atual]['result']
         assertividade = win / (win + loss) * 100 if win + loss > 0 else 100
-        resposta = f"""🚀 Resultado do dia 🚀
-        {timeframe} {gales}
-
-{result}
-
-🎯 Assertividade: {round(assertividade, 2)}%"""
+        resposta = templates.completo.format(
+            timeframe = timeframe, gales = gales,
+            result = result, quality = assertividade
+        )
         for canal in self.channel:
             message_id = self.listas_de_entradas[atual]['id'][canal]
             try:
@@ -244,18 +239,11 @@ class Telegram:
         timeframe = self.listas_de_entradas[atual]["timeframe"]
         fechados = self.listas_de_entradas[atual]["closed"]
         if win > 0 or loss > 0:
-            mensagem_parcial = f'''{bot_name}
-Lista {gales} {timeframe}
-
-✅ Vitórias {win}
-🔒 Fechados {fechados}
-❌ Derrotas {loss}
-
-✅ Sem gale: {winsg}
-🐔 Win Gale: {win - winsg}
-
-🎯 Assertividade: {round(win / (win + loss) * 100, 2)}%
-                        '''
+            mensagem_parcial = templates.parcial.format(
+                gales = gales, timeframe = timeframe, win = win, 
+                fechados = fechados, loss = loss, winsg = winsg,
+                wincg = win - winsg, quality = round(
+                    win / (win + loss) * 100, 2))
             try:
                 self.bot.sendMessage(canal, mensagem_parcial)
             except:
@@ -309,15 +297,12 @@ Lista {gales} {timeframe}
         ordem = '⬆' if direcao.lower() == "call" else '⬇'
         resultado = '🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else '❌'
 
-        resposta = f"""
-{bot_name}
-📊 Ativo: {paridade}
-⏰ Período: M{timeframe // 60}
-⏱ Horário: {hora_entrada}
-{ordem} Direção: {direcao.upper()}
-{texto_gales}
-Resultado: {resultado}
-        """
+        resposta = templates.resultado.format(
+            paridade = paridade, timeframe = timeframe // 60, 
+            hora_entrada = hora_entrada, ordem = ordem, 
+            direcao = direcao.upper(), gales = texto_gales,
+            resultado = resultado
+        )
         try:
             # Salva informações
             self.listas_de_entradas[atual]['result'] += (
@@ -361,19 +346,16 @@ Resultado: {resultado}
                     list(map(strDateHour, comando["data"])))
                 hora = ":".join(
                     list(map(strDateHour, comando["hora"])))
-                par = comando['par']
+                paridade = comando['par']
                 direcao = comando['ordem']
                 key = str(indice)+"/"+str(dia)+"/"+hora
                 resultado[key] = {}
-                resultado[key]['msg'] = f'''
-{bot_name}
-🔰 ENTRADA {hora}
-⏱ Período: {periodo}
-📊 Ativo: {par}
-{"⬆" if direcao.lower() == "call" else "⬇"} Direção: {direcao.upper()}
-{tipo}
-                '''
-                resultado[key]['par'] = par
+                resultado[key]['msg'] = templates.entradas.format(
+                    hora = hora, periodo = periodo,
+                    gales = tipo, paridade = paridade, 
+                    emoji_dir = "⬆" if direcao.lower() == "call" else "⬇", direcao = direcao.upper()
+                )
+                resultado[key]['par'] = paridade
                 resultado[key]['hora'] = hora
                 resultado[key]['gale'] = [
                     int(x) for x in tipo.split() if x.isdigit()]
@@ -381,6 +363,7 @@ Resultado: {resultado}
                 resultado[key]['periodo'] = int(periodo.strip("M"))
                 resultado[key]['result'] = "?"
             except Exception as e:
+                print(type(e), e)
                 print("Não entendi a entrada:", comando)
         return resultado
 
@@ -589,22 +572,6 @@ Resultado: {resultado}
                 pprint.pprint(comando)
 
 if __name__ == "__main__":
-    dia, mes, ano, hora, minuto = 30, 8, 2020, 1, 10
-
-    data_final = datetime(ano, mes, dia, hora, minuto)
-    tempo_restante = datetime.timestamp(data_final) - datetime.timestamp(datetime.now())
-
-    if  tempo_restante < 0:
-        input("Acabou o tempo teste. Digite enter para fechar o programa.")
-        sys.exit(0)
-    else:
-        restante = data_final - datetime.now()
-        horas_minutos = timedelta(seconds = tempo_restante)
-        duracao = str(horas_minutos)[:-7].replace('days', 'dias')
-        if "dias" not in duracao:
-            duracao += "h"
-        print(f"O período teste dura {duracao}")
-
     verificador = True
     try:
         with open("settings.json", "r+") as file:
