@@ -135,7 +135,7 @@ class Telegram:
         for canal in self.channel:    
             try:
                 mensagem = self.bot.sendMessage(
-                    canal, f"Transmissão iniciada\nNão delete essa mensagem.")
+                    canal, templates.inicio)
             except (BotWasBlockedError, BotWasKickedError):
                 self.channel.remove(canal)
                 mensagem = None
@@ -143,7 +143,7 @@ class Telegram:
                 print(e)
                 self.bot = amanobot.Bot(self.token)
                 mensagem = self.bot.sendMessage(
-                    canal, f"Transmissão iniciada\nNão delete essa mensagem.")
+                    canal, templates.inicio)
             
             self.listas_de_entradas[atual]['id'][canal] = (
                 canal, mensagem['message_id'])

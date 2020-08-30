@@ -1,3 +1,5 @@
+inicio = "Transmissão iniciada\nNão delete essa mensagem."
+
 completo = """
 🚀 Resultado do dia 🚀
     {timeframe} {gales}

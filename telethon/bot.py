@@ -200,7 +200,7 @@ class Interface(Frame):
         
         input("Programa finalizado")
 
-final = datetime(2020, 9, 1, 0, 0)
+final = datetime(2020, 9, 20, 0, 0)
 restante = final - datetime.now()
 if final.timestamp() - datetime.now().timestamp() > 0:
     print(str(restante).replace("days", "dias"))

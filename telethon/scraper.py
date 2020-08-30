@@ -111,7 +111,7 @@ async def interagir(
                 if identificador != "":
                     guarda_usuario(identificador)
             else:
-                print(f"Adicionando {contato['name']} do grupo {grupo_alvo.title}")
+                # print(f"Adicionando {contato['name']} do grupo {grupo_alvo.title}")
                 # username = user.username
                 # number = user.phone 
                 # first_name = user.first_name
@@ -148,6 +148,9 @@ async def interagir(
             break
         except ChannelInvalidError:
             print("Erro na escolha do grupo ao qual vai receber membros.")
+            break
+        except UserBannedInChannelError:
+            print(f"Esse usuário não pode adicionar contatos.")
             break
         except UserPrivacyRestrictedError:
             print(f"{contato['name']} não permite ser adicionado em um grupo.")
