@@ -1,4 +1,4 @@
-inicio = "Transmissão iniciada\nNão delete essa mensagem."
+inicio = "Transmissão iniciada\nBom trade para todos."
 
 completo = """
 🚀 Resultado do dia 🚀
@@ -9,7 +9,7 @@ completo = """
 🎯 Assertividade: {quality}%"""
 
 parcial = '''
-💵💵 Lk Bot 💵💵
+🎯 M.M_007 Bot 🎯
 
 Lista {gales} {timeframe}
 
@@ -24,7 +24,7 @@ Lista {gales} {timeframe}
 '''
 
 resultado = """
-💵💵 Lk Bot 💵💵
+🎯 M.M_007 Bot 🎯
 
 📊 Ativo: {paridade}
 ⏰ Período: M{timeframe}
@@ -35,7 +35,7 @@ Resultado: {resultado}
 """
 
 entradas = """
-💵💵 Lk Bot 💵💵
+🎯 M.M_007 Bot 🎯
 
 🔰 ENTRADA {hora}
 ⏱ Período: {periodo}
