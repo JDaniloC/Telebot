@@ -229,7 +229,9 @@ class Telegram:
         timeframe = self.listas_de_entradas[atual]['timeframe']
         gales = self.listas_de_entradas[atual]['gales']
         result = self.listas_de_entradas[atual]['result']
-        assertividade = win / (win + loss) * 100 if win + loss > 0 else 100
+        assertividade = round(
+            win / (win + loss) * 100 if 
+            win + loss > 0 else 100, 2)
         resposta = templates.completo.format(
             timeframe = timeframe, gales = gales,
             result = result, quality = assertividade
@@ -260,7 +262,7 @@ class Telegram:
     def mandar_resultado(
         self, message_id, paridade, hora_entrada, 
         timeframe, direcao, max_gales, atual, apagar):
-        time.sleep(295)
+        time.sleep(292)
         timeframe *= 60
         espera = datetime.now().timestamp() + (timeframe * 3) + 10
 
