@@ -140,10 +140,14 @@ class Telegram:
                 self.channel.remove(canal)
                 mensagem = None
             except Exception as e:
-                print(e)
-                self.bot = amanobot.Bot(self.token)
-                mensagem = self.bot.sendMessage(
-                    canal, templates.inicio)
+                if "chat not found" in e.description:
+                    self.channel.remove(canal)
+                    continue
+                else:
+                    print(e)
+                    self.bot = amanobot.Bot(self.token)
+                    mensagem = self.bot.sendMessage(
+                        canal, templates.inicio)
             
             self.listas_de_entradas[atual]['id'][canal] = (
                 canal, mensagem['message_id'])
@@ -191,8 +195,7 @@ class Telegram:
                             i += 1
                         except (BotWasBlockedError, 
                                 BotWasKickedError):
-                            self.channel.remove(
-                                self.channel[i])
+                            self.channel.remove(self.channel[i])
                         except Exception as e:
                             if "rights" in str(e):
                                 self.bot.sendMessage(chat_id, 
@@ -211,6 +214,15 @@ class Telegram:
         self.bot.sendMessage(chat_id, "Transmissão finalizada")
         print("Terminou a transmissão")
 
+    def editar_mensagem(self, message_id, resposta):
+        try:
+            self.bot.editMessageText(message_id, resposta)
+        except Exception as e:
+            if "modified" not in str(e):
+                self.bot = amanobot.Bot(self.token)
+                self.bot.editMessageText(message_id, resposta)
+
+
     def mandar_completa(self, atual):
         win = self.listas_de_entradas[atual]["win"]
         loss = self.listas_de_entradas[atual]["loss"]
@@ -224,12 +236,7 @@ class Telegram:
         )
         for canal in self.channel:
             message_id = self.listas_de_entradas[atual]['id'][canal]
-            try:
-                self.bot.editMessageText(message_id, resposta)
-            except Exception as e:
-                if "modified" not in str(e):
-                    self.bot = amanobot.Bot(self.token)
-                    self.bot.editMessageText(message_id, resposta)
+            self.editar_mensagem(message_id, resposta)
 
     def mandar_parcial(self, canal, atual):
         win = self.listas_de_entradas[atual]["win"]
@@ -253,9 +260,9 @@ class Telegram:
     def mandar_resultado(
         self, message_id, paridade, hora_entrada, 
         timeframe, direcao, max_gales, atual, apagar):
-        time.sleep(300)
+        time.sleep(295)
         timeframe *= 60
-        espera = datetime.now().timestamp() + (timeframe * 3) + 5
+        espera = datetime.now().timestamp() + (timeframe * 3) + 10
 
         abertas = self.IQ.get_all_open_time()
         esta_aberto = True
@@ -275,7 +282,20 @@ class Telegram:
         gales = 0
         win = False
         texto_gales = f"🐔 Até {max_gales[0]} gales" if len(max_gales) == 1 else ""
+        ordem = '⬆' if direcao.lower() == "call" else '⬇'
         if esta_aberto:
+            tendencia, rsi, taxa = self.calcular_tendencia(
+                paridade, direcao, timeframe)
+            suporte_resistencia = self.devolve_suporte_resistencia(
+                paridade, timeframe, taxa)
+            self.editar_mensagem(message_id, templates.operacao.format(
+                paridade = paridade, timeframe = timeframe // 60, 
+                hora_entrada = hora_entrada, ordem = ordem, 
+                direcao = direcao.upper(), gales = texto_gales,
+                taxa = taxa, tendencia = tendencia, rsi = rsi,
+                suporte_resistencia = suporte_resistencia
+            ))
+
             time.sleep(espera - time.time())
 
             velas = self.IQ.get_candles(
@@ -294,7 +314,6 @@ class Telegram:
         if len(max_gales) == 1 and gales == 2 and max_gales[0] == 1:
             win = False
 
-        ordem = '⬆' if direcao.lower() == "call" else '⬇'
         resultado = '🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else '❌'
 
         resposta = templates.resultado.format(
@@ -320,16 +339,126 @@ class Telegram:
         except Exception as e:
             print(type(e), e)
 
-        try:
-            self.bot.editMessageText(message_id, resposta)
-        except:
-            self.bot = amanobot.Bot(self.token)
-            self.bot.editMessageText(message_id, resposta)
-        
+        self.editar_mensagem(message_id, resposta)
+
         if apagar:
             for canal in self.channel:
                 self.mandar_parcial(canal, atual)
             del self.listas_de_entradas[atual]
+
+    def calcular_tendencia(
+        self, par, direcao, timeframe):
+        '''
+        Devolve se a entrada está de acordo com SMA
+        '''
+        import numpy
+
+        periodo = 21
+        dados = [
+            x['close'] for x in self.IQ.get_candles(
+            par, timeframe, periodo * 2, time.time())
+        ]
+        # Calcula a SMA
+        pesos = numpy.repeat(1.0, periodo) / periodo
+        smas = numpy.convolve(
+            dados, pesos, 'valid').tolist()
+        diferenca = smas[-1] - smas[-periodo]
+        tendencia =  '⬆' if diferenca > 0 else '⬇'
+        rsi = round(self.calcular_rsi(dados, 14), 2)    
+
+        return tendencia, rsi, dados[-1]
+
+    def calcular_rsi(self, values, period):
+        '''
+        Found in a friend code
+        '''
+        import numpy
+
+        deltas = numpy.diff(values)
+        seed = deltas[:period + 1]
+        up = seed[(seed >= 0)].sum() / period
+        down = -seed[(seed < 0)].sum() / period
+        rs = up / down
+        rsi = numpy.zeros_like(values)
+        rsi[:period] = 100.0 - 100.0 / (1.0 + rs)
+        for i in range(period, len(values)):
+            delta = deltas[(i - 1)]
+            if delta > 0:
+                upval = delta
+                downval = 0.0
+            else:
+                upval = 0.0
+                downval = -delta
+            up = (up * (period - 1) + upval) / period
+            down = (down * (period - 1) + downval) / period
+            rs = up / down
+            rsi[i] = 100.0 - 100.0 / (1.0 + rs)
+
+        return rsi[-1:][0]
+
+    def devolve_suporte_resistencia(
+        self, paridade, timeframe, vela):
+        velas = self.IQ.get_candles(
+            paridade, timeframe, 1000, time.time())
+
+        dados = []
+        for i in velas:
+            dados.extend([i['close'], i['max'], i['min']])
+
+        maximos_minimos = []
+        em_processo = []
+        suportes_resistencias = []
+
+        def proximo(a, b, rate = 0.00005):
+            if a - rate < b < a + rate:
+                return True
+            return False
+
+        def procura_perto(tipo, item):
+            for i in maximos_minimos:
+                if proximo(i, item):
+                    if item in maximos_minimos:
+                        maximos_minimos.remove(item)
+                        if item not in em_processo:
+                            em_processo.append(item)
+                    else:
+                        verifica = True
+                        excluir = None
+                        for supres in suportes_resistencias:
+                            if proximo(item, supres):
+                                verifica = False
+                                break
+                            elif proximo(item, supres, 0.0001):
+                                excluir = supres
+
+                        if verifica:
+                            if excluir != None:
+                                if tipo == "max":
+                                    item = item if item > excluir else excluir
+                                else:
+                                    item = item if item < excluir else excluir
+                            if item not in suportes_resistencias:
+                                suportes_resistencias.append(item)
+
+        periodo = 20
+
+        for i in range(0, len(dados), periodo):
+            analise = dados[i:i + periodo]
+            maximo = max(analise)
+            if maximo not in maximos_minimos:
+                maximos_minimos.append(maximo)
+            else: procura_perto("max", maximo)
+            
+            minimo = min(analise)
+            if minimo not in maximos_minimos:
+                maximos_minimos.append(minimo)
+            else: procura_perto("min", minimo)
+
+        mais_proximo = suportes_resistencias[0]
+        for i in suportes_resistencias:
+            if abs(vela - i) < mais_proximo:
+                mais_proximo = i
+        return mais_proximo
 
     def formatar_entradas(self, tipo, periodo, comandos):
         '''

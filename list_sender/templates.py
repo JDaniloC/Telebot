@@ -9,7 +9,7 @@ completo = """
 🎯 Assertividade: {quality}%"""
 
 parcial = '''
-🎯 M.M_007 Bot 🎯
+  🎯 M.M_007 Bot 🎯
 
 Lista {gales} {timeframe}
 
@@ -24,7 +24,7 @@ Lista {gales} {timeframe}
 '''
 
 resultado = """
-🎯 M.M_007 Bot 🎯
+  🎯 M.M_007 Bot 🎯
 
 📊 Ativo: {paridade}
 ⏰ Período: M{timeframe}
@@ -34,8 +34,24 @@ resultado = """
 Resultado: {resultado}
 """
 
+operacao = """
+  🎯 M.M_007 Bot 🎯
+
+📊 Ativo: {paridade}
+⏰ Período: M{timeframe}
+⏱ Horário: {hora_entrada}
+{ordem} Direção: {direcao}
+{gales}
+
+📉 Taxa atual: {taxa}
+📈 Sup/Resist: {suporte_resistencia}
+📈 SMA: {tendencia}
+📈 RSI: {rsi}%
+  ⚙️ Em operação...⚙️
+"""
+
 entradas = """
-🎯 M.M_007 Bot 🎯
+  🎯 M.M_007 Bot 🎯
 
 🔰 ENTRADA {hora}
 ⏱ Período: {periodo}
