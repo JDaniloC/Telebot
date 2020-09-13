@@ -10,6 +10,7 @@ from telethon.tl.functions.messages import GetDialogsRequest
 from telethon.tl.types import InputPeerEmpty, InputPeerChannel, InputPeerUser
 from telethon.tl.functions.channels import InviteToChannelRequest
 from telethon.tl.functions.contacts import AddContactRequest, DeleteContactsRequest
+from datetime import datetime
 import json, time, sys, traceback, asyncio
 
 async def captura_grupo(client, escolha = None):
@@ -78,8 +79,8 @@ def guarda_usuario(info):
 total_capturado = 0
 
 async def interagir(
-    client, grupo_alvo, entidade_principal, tempo_pausa, 
-    modo = "add", offset = 0, mensagem = {}, limitar = 200):
+    client, grupo_alvo, entidade_principal, tempo_pausa, modo = "add", 
+    offset = 0, mensagem = {}, limitar = 200, filtro_online = 360):
     global total_capturado
     print(f'Capturando membros... do {grupo_alvo.title}')
     cont = 0
@@ -95,6 +96,11 @@ async def interagir(
             "suport", "suporte", "support"]:
             if blacklist in contato['name'].lower():
                 print(f"Pulando {contato['name']}")
+                continue
+        if hasattr(user.status, "was_online"):
+            online = user.status.was_online.replace(tzinfo = None)
+            tempo = datetime.now() - online
+            if not tempo.days < filtro_online:
                 continue
         try:
             usuario = InputPeerUser(contato['id'], contato['hash'])
@@ -124,14 +130,16 @@ async def interagir(
                 # await asyncio.sleep(30)
                 
                 # Adiciona no grupo
-                await client(InviteToChannelRequest(entidade_principal, [usuario]))
+                await client(InviteToChannelRequest(
+                    entidade_principal, [usuario]))
                 
                 # # Exclui dos contatos
                 # await asyncio.sleep(60)
                 # for x in [username, first_name, last_name, number, user.id]:
                 #     if x != None:
                 #         try:
-                #             result = await client(DeleteContactsRequest([x]))
+                #             result = await client(
+                #               DeleteContactsRequest([x]))
                 #             break
                 #         except:
                 #             pass
@@ -172,8 +180,8 @@ async def interagir(
     print(f"\nO bot atingiu {cont} membros no grupo {grupo_alvo.title}\n")
 
 async def main(
-    usuarios, pausar = 30, modo = "msg", 
-    offset = 0, mensagem = "", limitar = 50):
+    usuarios, pausar = 30, modo = "msg", offset = 0, 
+    mensagem = "", limitar = 50, filtro_online = 7):
     global total_capturado
     
     with open("usuarios.json", "w") as file:
@@ -225,8 +233,8 @@ async def main(
         else:
             entidade_principal = None
         task = asyncio.create_task(interagir(
-            client, grupo_alvo, entidade_principal, 
-            pausar, modo, offset, mensagem, limitar))
+            client, grupo_alvo, entidade_principal, pausar, modo, 
+            offset, mensagem, limitar, filtro_online))
         
         esperar.append(task)
 

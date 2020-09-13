@@ -116,36 +116,43 @@ class Interface(Frame):
                 campo.grid(row = i + 1, column = index)
             self.entradas.append(client)
         
-        self.pausar = StringVar(value = "0")
-        self.pular = StringVar(value = "0")
+        self.pausar = IntVar(value = 30)
+        self.pular = IntVar(value = 0)
         self.modo = StringVar(value = "add")
-        self.limitar = StringVar(value = 40)
+        self.limitar = IntVar(value = 40)
+        self.filtro = IntVar(value = 7)
         
-        t.Label(self.esquerda, text = "Pausa (segundos):"
+        t.Label(self.esquerda, text = "Pausar (segundos):"
             ).grid(row = 23, column = 0)
         t.Entry(self.esquerda, textvariable = self.pausar, 
             width = 5).grid(row = 23, column = 1, sticky = "w")
-        t.Label(self.esquerda, text = "Pular:").grid(
-            row = 23, column = 1)
-        t.Entry(self.esquerda, textvariable = self.pular, width = 5
-            ).grid(row = 23, column = 1, sticky = "e")
-        t.Label(self.esquerda, text = "Limite:"
-            ).grid(row = 23, column = 2, sticky = "w")
+        t.Label(self.esquerda, text = "Começar a partir dos (pular):"
+            ).grid(row = 23, column = 1, columnspan = 2)
+        t.Entry(self.esquerda, textvariable = self.pular, 
+            width = 5).grid(row = 23, column = 2, sticky = "e")
+        
+        t.Label(self.esquerda, text = "Limite de adição por conta:"
+            ).grid(row = 24, column = 1, columnspan = 2)
         t.Entry(self.esquerda, textvariable = self.limitar, 
-            width = 10).grid(row = 23, column = 2, sticky = "e")
+            width = 5).grid(row = 24, column = 2, sticky = "e")
+        t.Label(self.esquerda, text = "Online a quantos dias:"
+            ).grid(row = 24, column = 0, pady = 5)
+        t.Entry(self.esquerda, textvariable = self.filtro, 
+            width = 5).grid(row = 24, column = 1, sticky = "w")
+
         t.Radiobutton(self.esquerda, text = "Adição", 
             variable = self.modo, value = "add").grid(
-            row = 24, column = 0)
+            row = 25, column = 0)
         t.Radiobutton(self.esquerda, text = "Mensagem", 
             variable = self.modo, value = "msg").grid(
-            row = 24, column = 1)
+            row = 25, column = 1)
         t.Radiobutton(self.esquerda, text = "Captura", 
             variable = self.modo, value = "save").grid(
-            row = 24, column = 2)
+            row = 25, column = 2)
 
         t.Button(self.esquerda, text = "Começar", 
             command = self.comecar).grid(
-            row = 25, columnspan = 3, pady = 5)
+            row = 26, columnspan = 3, pady = 5)
         # Comentar na versão trial
         self.carregar()
 
@@ -200,7 +207,7 @@ class Interface(Frame):
         
         input("Programa finalizado")
 
-final = datetime(2020, 9, 20, 0, 0)
+final = datetime(2020, 10, 1, 0, 0)
 restante = final - datetime.now()
 if final.timestamp() - datetime.now().timestamp() > 0:
     print(str(restante).replace("days", "dias"))
