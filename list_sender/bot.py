@@ -456,11 +456,14 @@ class Telegram:
                 maximos_minimos.append(minimo)
             else: procura_perto("min", minimo)
 
-        mais_proximo = suportes_resistencias[0]
-        for i in suportes_resistencias:
-            if abs(vela - i) < mais_proximo:
-                mais_proximo = i
-        return mais_proximo
+        if len(suportes_resistencias) > 0:
+            mais_proximo = suportes_resistencias[0]
+            for i in suportes_resistencias:
+                if abs(vela - i) < mais_proximo:
+                    mais_proximo = i
+            return mais_proximo
+        else:
+            return "-"
 
     def formatar_entradas(self, tipo, periodo, comandos):
         '''
