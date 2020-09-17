@@ -189,10 +189,8 @@ class Telegram:
                             if (len(self.channel) > 0 and
                             time.time() - hora_parcial > (3600 * 3)):
                                 hora_parcial = time.time()
-                                self.mandar_parcial(
-                                    self.channel[i], atual)
+                                self.mandar_parcial(atual)
                                 self.mandar_completa(atual)
-                            i += 1
                         except (BotWasBlockedError, 
                                 BotWasKickedError):
                             self.channel.remove(self.channel[i])
@@ -204,9 +202,9 @@ class Telegram:
                                 print(e)
                                 self.bot = amanobot.Bot(self.token)
                                 time.sleep(1)
+                        i += 1
             
-        for canal in self.channel:
-            self.mandar_parcial(canal, atual)
+        self.mandar_parcial(atual)
 
         if not self.listas_de_entradas[atual]['on']:
             del self.listas_de_entradas[atual]
@@ -240,7 +238,7 @@ class Telegram:
             message_id = self.listas_de_entradas[atual]['id'][canal]
             self.editar_mensagem(message_id, resposta)
 
-    def mandar_parcial(self, canal, atual):
+    def mandar_parcial(self, atual):
         win = self.listas_de_entradas[atual]["win"]
         loss = self.listas_de_entradas[atual]["loss"]
         winsg = self.listas_de_entradas[atual]["winsg"]
@@ -253,6 +251,7 @@ class Telegram:
                 fechados = fechados, loss = loss, winsg = winsg,
                 wincg = win - winsg, quality = round(
                     win / (win + loss) * 100, 2))
+        for canal in self.channel:
             try:
                 self.bot.sendMessage(canal, mensagem_parcial)
             except:
