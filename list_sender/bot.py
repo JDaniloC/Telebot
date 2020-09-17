@@ -79,6 +79,7 @@ class Telegram:
         self.listas_de_entradas = {}
         self.channel = channel
         self.meu_id = meu_id
+        self.cadeado = threading.Lock()
         
         self.IQ = IQ_Option("hiyivo1180@tmail7.com", "senha123")
         self.IQ.connect()
@@ -186,11 +187,7 @@ class Telegram:
                                     par, hora, timeframe, 
                                     direcao, gales,
                                     atual, apagar)).start()
-                            if (len(self.channel) > 0 and
-                            time.time() - hora_parcial > (3600 * 3)):
-                                hora_parcial = time.time()
-                                self.mandar_parcial(atual)
-                                self.mandar_completa(atual)
+                            i += 1
                         except (BotWasBlockedError, 
                                 BotWasKickedError):
                             self.channel.remove(self.channel[i])
@@ -202,7 +199,11 @@ class Telegram:
                                 print(e)
                                 self.bot = amanobot.Bot(self.token)
                                 time.sleep(1)
-                        i += 1
+                    if (len(self.channel) > 0 and
+                    time.time() - hora_parcial > (3600 * 3)):
+                        hora_parcial = time.time()
+                        self.mandar_parcial(atual)
+                        self.mandar_completa(atual)
             
         self.mandar_parcial(atual)
 
@@ -219,7 +220,6 @@ class Telegram:
             if "modified" not in str(e):
                 self.bot = amanobot.Bot(self.token)
                 self.bot.editMessageText(message_id, resposta)
-
 
     def mandar_completa(self, atual):
         win = self.listas_de_entradas[atual]["win"]
@@ -323,22 +323,27 @@ class Telegram:
             direcao = direcao.upper(), gales = texto_gales,
             resultado = resultado
         )
-        try:
-            # Salva informações
-            self.listas_de_entradas[atual]['result'] += (
-                f"{hora_entrada} {paridade} {direcao.upper()} {resultado}\n")
-            if win:
-                self.listas_de_entradas[atual]['win'] += 1
-                if gales == 0:
-                    self.listas_de_entradas[atual]["winsg"] += 1
-            elif esta_aberto:
-                self.listas_de_entradas[atual]["loss"] += 1
-            else:
-                self.listas_de_entradas[atual]["closed"] += 1
+        
+        with self.cadeado:
+            if (f"{hora_entrada} {paridade} {direcao.upper()} {resultado}" 
+                not in self.listas_de_entradas[atual]['result'].split("\n")):
+                try:
+                    # Salva informações caso alguém ainda não salvou
+                    self.listas_de_entradas[atual]['result'] += (
+                        f"{hora_entrada} {paridade} {direcao.upper()} {resultado}\n")
+                    if win:
+                        self.listas_de_entradas[atual]['win'] += 1
+                        if gales == 0:
+                            self.listas_de_entradas[atual]["winsg"] += 1
+                    elif esta_aberto:
+                        self.listas_de_entradas[atual]["loss"] += 1
+                    else:
+                        self.listas_de_entradas[atual]["closed"] += 1
 
-            self.mandar_completa(atual)
-        except Exception as e:
-            print(type(e), e)
+                    print(f"Salvando {hora_entrada} {paridade}: {message_id}")
+                    self.mandar_completa(atual)
+                except Exception as e:
+                    print(type(e), e)
 
         self.editar_mensagem(message_id, resposta)
 
