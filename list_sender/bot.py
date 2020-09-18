@@ -251,12 +251,12 @@ class Telegram:
                 fechados = fechados, loss = loss, winsg = winsg,
                 wincg = win - winsg, quality = round(
                     win / (win + loss) * 100, 2))
-        for canal in self.channel:
-            try:
-                self.bot.sendMessage(canal, mensagem_parcial)
-            except:
-                self.bot = amanobot.Bot(self.token)
-                self.bot.sendMessage(canal, mensagem_parcial)
+            for canal in self.channel:
+                try:
+                    self.bot.sendMessage(canal, mensagem_parcial)
+                except:
+                    self.bot = amanobot.Bot(self.token)
+                    self.bot.sendMessage(canal, mensagem_parcial)
 
     def mandar_resultado(
         self, message_id, paridade, hora_entrada, 
