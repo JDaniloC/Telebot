@@ -139,7 +139,7 @@ class Telegram:
                     canal, templates.inicio)
             except (BotWasBlockedError, BotWasKickedError):
                 self.channel.remove(canal)
-                mensagem = None
+                continue
             except Exception as e:
                 if "chat not found" in e.description:
                     self.channel.remove(canal)
