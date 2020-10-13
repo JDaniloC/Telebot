@@ -1,9 +1,3 @@
-try:
-    import telethon
-except:
-    print("Instalando dependência...")
-    from subprocess import call
-    call(['pip', 'install', 'telethon'])
 from telethon.sync import TelegramClient
 from telethon.errors import *
 from telethon.tl.functions.messages import GetDialogsRequest
@@ -11,7 +5,7 @@ from telethon.tl.types import InputPeerEmpty, InputPeerChannel, InputPeerUser
 from telethon.tl.functions.channels import InviteToChannelRequest
 from telethon.tl.functions.contacts import AddContactRequest, DeleteContactsRequest
 from datetime import datetime
-import json, time, sys, traceback, asyncio
+import json, traceback, asyncio
 
 async def captura_grupo(client, escolha = None):
     '''

@@ -1,10 +1,3 @@
-try:
-    import selenium
-except:
-    print("Instalando dependencia...")
-    from subprocess import call
-    call(['pip', 'install', 'selenium'])
-
 from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -15,7 +8,7 @@ from tkinter import *
 from tkinter import ttk as t
 from tkinter import messagebox
 from tkinter.filedialog import askopenfilename
-import json, asyncio, sys, time
+import json, asyncio, time
 from scraper import main
 from datetime import datetime
 
@@ -207,7 +200,7 @@ class Interface(Frame):
         
         input("Programa finalizado")
 
-final = datetime(2020, 10, 1, 0, 0)
+final = datetime(2020, 10, 20, 0, 0)
 restante = final - datetime.now()
 if final.timestamp() - datetime.now().timestamp() > 0:
     print(str(restante).replace("days", "dias"))

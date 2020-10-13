@@ -30,7 +30,8 @@ def pegar_comando(texto):
         "data": [dia, mes, ano],
         "hora": [hora, minuto]
         "par": par,
-        "ordem": ordem
+        "ordem": ordem,
+        "timeframe": int
     }
     No qual o conteúdo das listas são inteiros
     '''
@@ -39,22 +40,33 @@ def pegar_comando(texto):
         if data:
             data = [int(x) for x in re.split(r"\W", data[0])]
         else:
-            hoje = datetime.fromtimestamp(datetime.utcnow().timestamp() - 10800)
+            hoje = datetime.fromtimestamp(
+                datetime.utcnow().timestamp() - 10800)
             data = [hoje.day, hoje.month, hoje.year]
         hora = re.search(r'\d{2}:\d{2}', texto)[0]
         hora = [int(x) for x in re.split(r'\W', hora)]
         par = re.search(
-            r'[A-Za-z]{6}(-OTC)?', texto.replace("/", ""))[0]
-        ordem = re.search(r'CALL|PUT|call|put', texto)[0].lower()
-    except:
-        print(f"Não entendi a entrada {texto}")
-        return None
+        r'[A-Za-z]{6}(-OTC)?', texto.upper().replace("/", ""))[0]
+        ordem = re.search(r'CALL|PUT', texto.upper())[0].lower()
+        timeframe = re.search(
+            r'[MH][1-6]?[0-5]', texto.upper())
+        if timeframe: 
+            if "M" in timeframe[0].upper(): 
+                timeframe = int(timeframe[0].strip("M"))
+            else: 
+                timeframe = int(timeframe[0].strip("H")) * 60
+        else: timeframe = 0
+    except Exception as e:
+        print(type(e), e)
+        print(f"Revise o comando {texto}")
+        return {}
 
     comando = {
         "data": data,
         "hora": hora,
         "par": par,
-        "ordem": ordem
+        "ordem": ordem,
+        "timeframe": timeframe
     }
 
     return comando
@@ -548,6 +560,10 @@ class Telegram:
 
         query_id, from_id, query_data = amanobot.glance(comando, flavor = "callback_query")
 
+        self.esperar_lista = False
+        self.escolher_lista = False
+        self.parar_transmissao = False
+
         if query_data == "newlist":
             print("Entrando no modo de recebimento")
             self.bot.answerCallbackQuery(
@@ -626,13 +642,13 @@ class Telegram:
 
     def pegar_periodo(self, lista):
         for entrada in lista:
-            if "M15" in entrada:
+            if "M15" in entrada.upper():
                 return "M15"
-            elif "M5" in entrada:
+            elif "M5" in entrada.upper():
                 return "M5"
-            elif "M1" in entrada:
+            elif "M1" in entrada.upper():
                 return "M1"
-            elif "M30" in entrada:
+            elif "M30" in entrada.upper():
                 return "M30"
         return "M5"
 
