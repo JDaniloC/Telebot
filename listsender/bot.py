@@ -298,7 +298,7 @@ class Telegram:
         ordem = '⬆' if direcao.lower() == "call" else '⬇'
         if esta_aberto:
             tendencia, rsi, taxa = self.calcular_tendencia(
-                paridade, direcao, timeframe)
+                paridade, timeframe)
             suporte_resistencia = self.devolve_suporte_resistencia(
                 paridade, timeframe, taxa)
             self.editar_mensagem(message_id, templates.operacao.format(
@@ -365,7 +365,7 @@ class Telegram:
             del self.listas_de_entradas[atual]
 
     def calcular_tendencia(
-        self, par, direcao, timeframe):
+        self, par, timeframe):
         '''
         Devolve se a entrada está de acordo com SMA
         '''
@@ -414,8 +414,10 @@ class Telegram:
 
         return rsi[-1:][0]
 
-    def devolve_suporte_resistencia(
-        self, paridade, timeframe, vela):
+    def devolve_suporte_resistencia(self, paridade, timeframe, vela):
+        '''
+        Calcula o suporte ou resistência mais próxmio
+        '''
         velas = self.IQ.get_candles(
             paridade, timeframe, 1000, time.time())
 
@@ -484,6 +486,8 @@ class Telegram:
     def formatar_entradas(self, tipo, periodo, comandos):
         '''
         Recebe uma lista de comandos, e formata do jeito correto.
+            tipo: quantidade de gales no formato "🐔 Até 1 gale"
+            periodo: timeframe no formato "M1"
         '''
         resultado = {}
         for indice, comando in enumerate(comandos):
