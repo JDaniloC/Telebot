@@ -8,7 +8,7 @@ completo = """
 🎯 Assertividade: {quality}%"""
 
 parcial = '''
-  🎯 M.M_007 Bot 🎯
+  🎯 Bot 🎯
 
 ✅ Vitórias {win}
 🔒 Fechados {fechados}
@@ -21,7 +21,7 @@ parcial = '''
 '''
 
 resultado = """
-  🎯 M.M_007 Bot 🎯
+  🎯 Bot 🎯
 
 📊 Ativo: {paridade}
 ⏰ Período: M{timeframe}
@@ -32,7 +32,7 @@ Resultado: {resultado}
 """
 
 operacao = """
-  🎯 M.M_007 Bot 🎯
+  🎯 Bot 🎯
 
 📊 Ativo: {paridade}
 ⏰ Período: M{timeframe}
@@ -48,7 +48,7 @@ operacao = """
 """
 
 entradas = """
-  🎯 M.M_007 Bot 🎯
+  🎯 Bot 🎯
 
 🔰 ENTRADA {hora}
 ⏱ Período: {periodo}

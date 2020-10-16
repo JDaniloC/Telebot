@@ -53,14 +53,14 @@ class Telegram:
         hoje = datetime.fromtimestamp(
             datetime.utcnow().timestamp() - 10800)
             
-        caminho = self.meta_path / f'{hoje.strftime("%Y%m%d")}_retorno.csv'
+        caminho = self.meta_path / "Files" / f'{hoje.strftime("%Y%m%d")}_retorno.csv'
         resultado = []
         try:
             with open(caminho) as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=',')
                 csv_reader.__next__()
                 
-                delay = round(time.time())-1
+                delay = round(time.time()) - 1
             
                 for linha in csv_reader:
                     if delay <= int(linha[0]):
@@ -124,8 +124,9 @@ class Telegram:
         self.listas_de_entradas['result'] = ""
         hora_parcial = time.time()
 
+        lista_entradas = []
         while self.listas_de_entradas['on']:
-            lista_entradas = self.procurar_sinais()
+            lista_entradas = set(self.procurar_sinais()) # Pegar os elementos únicos
             for entrada in lista_entradas:
                 entrada = self.formatar_entrada(entrada)
                 if self.esperarAte(chat_id, entrada['timestamp']):
@@ -232,6 +233,12 @@ class Telegram:
         win = False
         texto_gales = f"🐔 Até {max_gales} gales"
         ordem = '⬆' if direcao.lower() == "call" else '⬇'
+        tempo = timeframe // 60
+        if tempo >= 60:
+            tempo = f"H{tempo//60}"
+        else:
+            tempo = f"M{tempo}"
+
         if esta_aberto:
             tendencia, rsi, taxa = self.calcular_tendencia(
                 paridade, timeframe)
@@ -550,7 +557,7 @@ if __name__ == "__main__":
             info = json.load(file)
         program = Telegram(
             info["token"], info["canais"], 
-            info["id"], info["meta_path"])
+            info["id"], info["metatrader"])
         verificador = program.rodando
         with open("settings.json", "w") as file:
             info['canais'] = program.channel
