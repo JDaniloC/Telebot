@@ -47,8 +47,11 @@ class Config(Frame):
             key: value.get() for key, value in self.entradas.items()
         }
         info['canais'] = info['canais'].strip().replace(" ", '').split(",")
-        info["id"] = list(
-            map(int, info["id"].strip().replace(" ", "").split(",")))
+        if info['id'] != "":
+            info['id'] = list(
+                map(int, info['id'].strip().replace(" ", "").split(",")))
+        else:
+            info['id'] = []
         info["metatrader"] = info["metatrader"].replace("\\", "/")
         with open("settings.json", "w") as file:
             json.dump(info, file, indent= 2)
@@ -62,8 +65,11 @@ class Config(Frame):
         }
         info['canais'] = info['canais'].strip().replace(" ", '').split(",")
         info["metatrader"] = info["metatrader"].replace("\\", "/")
-        info['id'] = list(
-            map(int, info['id'].strip().replace(" ", "").split(",")))
+        if info['id'] != "":
+            info['id'] = list(
+                map(int, info['id'].strip().replace(" ", "").split(",")))
+        else:
+            info['id'] = []
         self.janela.destroy()
         bot.Telegram(
             info["token"], info["canais"], info["id"], info["metatrader"])

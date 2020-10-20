@@ -1,6 +1,6 @@
 import time, pprint, traceback, json, threading 
 from iqoptionapi.stable_api import IQ_Option
-import re, amanobot, templates, csv
+import re, amanobot, csv, sys
 from datetime import datetime
 from pathlib import Path
 
@@ -9,6 +9,8 @@ from amanobot.exception import (
     BotWasBlockedError, BotWasKickedError)
 from amanobot.namedtuple import (
     InlineKeyboardMarkup, InlineKeyboardButton)
+
+sys.path.append(".")
 
 def escreve_erros(erro):
     '''
@@ -21,23 +23,24 @@ def escreve_erros(erro):
 
 class Telegram:
     def __init__(self, token, channel, meu_id, meta_path):
-        self.meta_path = Path(meta_path)
         self.token = token
-        self.bot = amanobot.Bot(token)
-        self.my_id = self.bot.getMe()['id']
-        self.listas_de_entradas = {}
         self.channel = channel
         self.id_permitidos = meu_id
+        self.invertido = False
+        
+        self.bot = amanobot.Bot(token)
+        self.meta_path = Path(meta_path)
         self.cadeado = threading.Lock()
+        self.my_id = self.bot.getMe()['id']
+        
+        self.enviados = []
+        self.listas_de_entradas = {}
         
         self.IQ = IQ_Option("hiyivo1180@tmail7.com", "senha123")
         self.IQ.connect()
 
+        self.esperar_grupo = False
         self.rodando = True
-        self.escolher_lista = False
-        self.esperar_lista = False
-        self.parar_transmissao = False
-        self.lista_atual = 1
 
         MessageLoop(self.bot, {
             "chat": self.recebe_comandos,
@@ -63,9 +66,9 @@ class Telegram:
                 delay = round(time.time()) - 1
             
                 for linha in csv_reader:
-                    if delay <= int(linha[0]):
-                        print("SINAL: ", 
-                            datetime.fromtimestamp(int(linha[0])))
+                    if delay <= int(linha[0]) and not linha in self.enviados:
+                        self.enviados.append(linha)
+                        print("SINAL: ", datetime.fromtimestamp(int(linha[0])))
                         resultado.append(linha)
         except Exception as e:
             print(type(e), e)
@@ -73,7 +76,7 @@ class Telegram:
         finally:
             return resultado
 
-    def esperarAte(self, identificador, timestamp):
+    def esperarAte(self, timestamp):
         '''
         Espera até determinada data/hora:minuto
         Recebe um dia/hora:minuto
@@ -83,7 +86,6 @@ class Telegram:
         segundos = alvo.timestamp() - agora
         if segundos > 0:
             print(f"Esperando até as {alvo}")
-            self.bot.sendMessage(identificador, f"\n [...] Próxima entrada será às {alvo} [...]")
             time.sleep(segundos)
             return True
         elif segundos > -60:
@@ -99,7 +101,7 @@ class Telegram:
         for canal in self.channel:    
             try:
                 mensagem = self.bot.sendMessage(
-                    canal, templates.inicio)
+                    canal, __import__("templates").inicio)
             except (BotWasBlockedError, BotWasKickedError):
                 self.channel.remove(canal)
                 continue
@@ -111,7 +113,7 @@ class Telegram:
                     print(e)
                     self.bot = amanobot.Bot(self.token)
                     mensagem = self.bot.sendMessage(
-                        canal, templates.inicio)
+                        canal, __import__("templates").inicio)
             
             self.listas_de_entradas[canal] = (canal, mensagem['message_id'])
         
@@ -126,43 +128,43 @@ class Telegram:
 
         lista_entradas = []
         while self.listas_de_entradas['on']:
-            lista_entradas = set(self.procurar_sinais()) # Pegar os elementos únicos
+            lista_entradas = self.procurar_sinais()
             for entrada in lista_entradas:
                 entrada = self.formatar_entrada(entrada)
-                if self.esperarAte(chat_id, entrada['timestamp']):
-                    i = 0
-                    while i < len(self.channel):
-                        try:
-                            mensagem = self.bot.sendMessage(
-                                self.channel[i],  entrada['msg'])
-                            par = entrada['par']
-                            hora = entrada['hora']
-                            direcao = entrada['direcao']
-                            timeframe = entrada['periodo']
-                            gales = entrada['gales']
-                            threading.Thread(
-                                target=self.mandar_resultado,
-                                args = ((self.channel[i], 
-                                    mensagem['message_id']), 
-                                    par, hora, timeframe, 
-                                    direcao, gales)).start()
-                            i += 1
-                        except (BotWasBlockedError, 
-                                BotWasKickedError):
-                            self.channel.remove(self.channel[i])
-                        except Exception as e:
-                            if "rights" in str(e):
-                                self.bot.sendMessage(chat_id, 
-                                "Preciso ter permissões para enviar mensagem, me coloque como admnistrador.")
-                            else:
-                                print(e)
-                                self.bot = amanobot.Bot(self.token)
-                                time.sleep(1)
-                    if (len(self.channel) > 0 and
-                    time.time() - hora_parcial > (3600 * 3)):
-                        hora_parcial = time.time()
-                        self.mandar_parcial()
-                        self.mandar_completa()
+                i = 0
+                while i < len(self.channel):
+                    try:
+                        mensagem = self.bot.sendMessage(
+                            self.channel[i],  entrada['msg'])
+                        timestamp = entrada['timestamp']
+                        par = entrada['par']
+                        hora = entrada['hora']
+                        direcao = entrada['direcao']
+                        timeframe = entrada['periodo']
+                        gales = entrada['gales']
+                        threading.Thread(
+                            target=self.mandar_resultado,
+                            args = ((self.channel[i],
+                                mensagem['message_id']), 
+                                timestamp, par, hora, timeframe, 
+                                direcao, gales)).start()
+                        i += 1
+                    except (BotWasBlockedError, 
+                            BotWasKickedError):
+                        self.channel.remove(self.channel[i])
+                    except Exception as e:
+                        if "rights" in str(e):
+                            self.bot.sendMessage(chat_id, 
+                            "Preciso ter permissões para enviar mensagem, me coloque como admnistrador.")
+                        else:
+                            print(e)
+                            self.bot = amanobot.Bot(self.token)
+                            time.sleep(1)
+                if (len(self.channel) > 0 and
+                time.time() - hora_parcial > (3600 * 3)):
+                    hora_parcial = time.time()
+                    self.mandar_parcial()
+                    self.mandar_completa()
             time.sleep(0.5)
             
         self.mandar_parcial()
@@ -185,7 +187,7 @@ class Telegram:
         assertividade = round(
             win / (win + loss) * 100 if 
             win + loss > 0 else 100, 2)
-        resposta = templates.completo.format(
+        resposta = __import__("templates").completo.format(
             result = result, quality = assertividade)
         for canal in self.channel:
             message_id = self.listas_de_entradas[canal]
@@ -197,7 +199,7 @@ class Telegram:
         winsg = self.listas_de_entradas["winsg"]
         fechados = self.listas_de_entradas["closed"]
         if win > 0 or loss > 0:
-            mensagem_parcial = templates.parcial.format(
+            mensagem_parcial = __import__("templates").parcial.format(
                 win = win, fechados = fechados, loss = loss, 
                 winsg = winsg, wincg = win - winsg,
                 quality = round(win / (win + loss) * 100, 2))
@@ -208,8 +210,9 @@ class Telegram:
                     self.bot = amanobot.Bot(self.token)
                     self.bot.sendMessage(canal, mensagem_parcial)
 
-    def mandar_resultado(self, message_id, paridade, hora_entrada, 
+    def mandar_resultado(self, message_id, timestamp, paridade, hora_entrada, 
         timeframe, direcao, max_gales):
+        self.esperarAte(timestamp)
         
         timeframe *= 60
         espera = datetime.now().timestamp() + (timeframe * 3) + 10
@@ -244,7 +247,7 @@ class Telegram:
                 paridade, timeframe)
             suporte_resistencia = self.devolve_suporte_resistencia(
                 paridade, timeframe, taxa)
-            self.editar_mensagem(message_id, templates.operacao.format(
+            self.editar_mensagem(message_id, __import__("templates").operacao.format(
                 paridade = paridade, timeframe = timeframe // 60, 
                 hora_entrada = hora_entrada, ordem = ordem, 
                 direcao = direcao.upper(), gales = texto_gales,
@@ -272,7 +275,7 @@ class Telegram:
 
         resultado = '🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else '❌'
 
-        resposta = templates.resultado.format(
+        resposta = __import__("templates").resultado.format(
             paridade = paridade, timeframe = timeframe // 60, 
             hora_entrada = hora_entrada, ordem = ordem, 
             direcao = direcao.upper(), gales = texto_gales,
@@ -294,7 +297,6 @@ class Telegram:
                     else:
                         self.listas_de_entradas["closed"] += 1
 
-                    print(f"Salvando {hora_entrada} {paridade}: {message_id}")
                     self.mandar_completa()
                 except Exception as e:
                     print(type(e), e)
@@ -436,7 +438,7 @@ class Telegram:
 
             resultado = {}
             resultado['timestamp'] = timestamp
-            resultado['msg'] = templates.entradas.format(
+            resultado['msg'] = __import__("templates").entradas.format(
                 hora = hora, periodo = periodo,
                 gales = "🐔 Até 2 gales", paridade = paridade, 
                 emoji_dir = "⬆" if direcao.lower() == "call" else "⬇", 
@@ -445,6 +447,8 @@ class Telegram:
             resultado['hora'] = hora
             resultado['gales'] = 2
             resultado['direcao'] = direcao.lower()
+            if self.invertido:
+                resultado['direcao'] = "call" if resultado['direcao'] == "put" else "put"
             resultado['periodo'] = int(periodo.strip("M"))
             resultado['result'] = "?"
         except Exception as e:
@@ -458,8 +462,11 @@ class Telegram:
         Chamada quando fala /comandos
         '''
         user = comando["from"]
-        nome = user["first_name"] + " " + user["last_name"]
-
+        try:
+            nome = user["first_name"] + " " + user["last_name"]
+        except:
+            nome = ""
+            
         keyboard = InlineKeyboardMarkup(inline_keyboard = [
             [InlineKeyboardButton(
                 text = "Começar transmissão", 
@@ -468,6 +475,10 @@ class Telegram:
             [InlineKeyboardButton(
                 text = "Adicionar novo grupo", 
                 callback_data = "newgroup"
+            )],
+            [InlineKeyboardButton(
+                text = "Inverter sinais", 
+                callback_data = "invert"
             )],
             [InlineKeyboardButton(
                 text = "Parar transmissão",
@@ -493,7 +504,6 @@ class Telegram:
             comando, flavor = "callback_query")
 
         self.esperar_grupo = False
-        self.parar_transmissao = False
 
         if query_data == "newgroup":
             print("Entrando no modo de recebimento")
@@ -502,6 +512,12 @@ class Telegram:
             self.bot.sendMessage(
                 from_id, "Adicione o bot no grupo.")
             self.esperar_grupo = True
+
+        elif query_data == "invert":
+            self.invertido = not self.invertido
+            print(f"Invertendo entradas para {self.invertido}")
+            self.bot.answerCallbackQuery(
+                query_id, text = f"Inverter: {self.invertido}")
 
         elif query_data == "start":
             print("Entranho no modo de transmissão")
@@ -547,7 +563,7 @@ class Telegram:
                 elif remover and identificador in self.channel:
                     self.channel.remove(identificador)
                 pprint.pprint(self.channel)
-            else:
+            elif "reply_to_message" not in comando:
                 pprint.pprint(comando)
 
 if __name__ == "__main__":

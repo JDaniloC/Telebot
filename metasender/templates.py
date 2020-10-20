@@ -8,7 +8,7 @@ completo = """
 🎯 Assertividade: {quality}%"""
 
 parcial = '''
-  🎯 Bot 🎯
+  🌊 TSUNAMI Bot 🌊
 
 ✅ Vitórias {win}
 🔒 Fechados {fechados}
@@ -21,7 +21,7 @@ parcial = '''
 '''
 
 resultado = """
-  🎯 Bot 🎯
+  🌊 TSUNAMI Bot 🌊
 
 📊 Ativo: {paridade}
 ⏰ Período: M{timeframe}
@@ -32,7 +32,7 @@ Resultado: {resultado}
 """
 
 operacao = """
-  🎯 Bot 🎯
+  🌊 TSUNAMI Bot 🌊
 
 📊 Ativo: {paridade}
 ⏰ Período: M{timeframe}
@@ -48,7 +48,7 @@ operacao = """
 """
 
 entradas = """
-  🎯 Bot 🎯
+  🌊 TSUNAMI Bot 🌊
 
 🔰 ENTRADA {hora}
 ⏱ Período: {periodo}
