@@ -1,8 +1,11 @@
+from cryptography.fernet import Fernet
+from os import listdir
+from datetime import timedelta
+
 from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.keys import Keys
 
 from tkinter import *
 from tkinter import ttk as t
@@ -200,10 +203,32 @@ class Interface(Frame):
         
         input("Programa finalizado")
 
-final = datetime(2020, 11, 15, 0, 0)
-restante = final - datetime.now()
-if final.timestamp() - datetime.now().timestamp() > 0:
-    print(str(restante).replace("days", "dias"))
+
+def devolve_licenca():
+    key = b'5oa6VUCRinbN50aH5XT7gOfrbdCeOaEUembWDV3EIW4='
+    f = Fernet(key)
+    try:
+        files = listdir(".")
+        indice = list(map(lambda x:".key" in x, files)).index(True)
+        with open(files[indice], "rb") as file:
+            message = f.decrypt(file.readline())
+            message = message.decode()
+            data, horario = message.split("|")
+            dia, mes, ano = list(map(int, data.split("/")))
+            hora, minuto = list(map(int, horario.split(":")))
+    except:
+        dia, mes, ano, hora, minuto = 28, 10, 2020, 0, 0
+    
+    data_final = datetime(ano, mes, dia, hora, minuto)
+    tempo_restante = datetime.timestamp(data_final) - datetime.timestamp(datetime.now())
+
+    return tempo_restante
+
+restante = devolve_licenca()
+if restante > 0:
+    horas_minutos = timedelta(seconds = restante)
+    
+    print(str(horas_minutos)[:-7].replace('days', 'dias'))
     janela = Tk()
     janela.title("TelegramBot")
     program = Interface(janela)

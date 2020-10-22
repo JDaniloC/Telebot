@@ -1,7 +1,6 @@
 import json, bot
 from tkinter import *
 from tkinter import messagebox
-from pathlib import Path
 
 class Config(Frame):
     def __init__(self, janela):

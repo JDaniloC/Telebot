@@ -6,14 +6,15 @@ except ModuleNotFoundError:
     import amanobot
 
 from iqoptionapi.stable_api import IQ_Option
-import time, pprint, traceback, json, re, threading
+import time, pprint, traceback, json, re, threading, sys
 from datetime import datetime
 from amanobot.loop import MessageLoop
 from amanobot.exception import (
     BotWasBlockedError, BotWasKickedError)
 from amanobot.namedtuple import (InlineKeyboardMarkup, InlineKeyboardButton,
  ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove)
-import templates
+
+sys.path.append(".")
 
 def escreve_erros(erro):
     '''
@@ -148,7 +149,7 @@ class Telegram:
         for canal in self.channel:    
             try:
                 mensagem = self.bot.sendMessage(
-                    canal, templates.inicio)
+                    canal, __import__("templates").inicio)
             except (BotWasBlockedError, BotWasKickedError):
                 self.channel.remove(canal)
                 continue
@@ -160,7 +161,7 @@ class Telegram:
                     print(e)
                     self.bot = amanobot.Bot(self.token)
                     mensagem = self.bot.sendMessage(
-                        canal, templates.inicio)
+                        canal, __import__("templates").inicio)
             
             self.listas_de_entradas[atual]['id'][canal] = (
                 canal, mensagem['message_id'])
@@ -242,7 +243,7 @@ class Telegram:
         assertividade = round(
             win / (win + loss) * 100 if 
             win + loss > 0 else 100, 2)
-        resposta = templates.completo.format(
+        resposta = __import__("templates").completo.format(
             timeframe = timeframe, gales = gales,
             result = result, quality = assertividade
         )
@@ -258,7 +259,7 @@ class Telegram:
         timeframe = self.listas_de_entradas[atual]["timeframe"]
         fechados = self.listas_de_entradas[atual]["closed"]
         if win > 0 or loss > 0:
-            mensagem_parcial = templates.parcial.format(
+            mensagem_parcial = __import__("templates").parcial.format(
                 gales = gales, timeframe = timeframe, win = win, 
                 fechados = fechados, loss = loss, winsg = winsg,
                 wincg = win - winsg, quality = round(
@@ -301,7 +302,7 @@ class Telegram:
                 paridade, timeframe)
             suporte_resistencia = self.devolve_suporte_resistencia(
                 paridade, timeframe, taxa)
-            self.editar_mensagem(message_id, templates.operacao.format(
+            self.editar_mensagem(message_id, __import__("templates").operacao.format(
                 paridade = paridade, timeframe = timeframe // 60, 
                 hora_entrada = hora_entrada, ordem = ordem, 
                 direcao = direcao.upper(), gales = texto_gales,
@@ -329,7 +330,7 @@ class Telegram:
 
         resultado = '🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else '❌'
 
-        resposta = templates.resultado.format(
+        resposta = __import__("templates").resultado.format(
             paridade = paridade, timeframe = timeframe // 60, 
             hora_entrada = hora_entrada, ordem = ordem, 
             direcao = direcao.upper(), gales = texto_gales,
@@ -504,7 +505,7 @@ class Telegram:
                 direcao = comando['ordem']
                 key = str(indice)+"/"+str(dia)+"/"+hora
                 resultado[key] = {}
-                resultado[key]['msg'] = templates.entradas.format(
+                resultado[key]['msg'] = __import__("templates").entradas.format(
                     hora = hora, periodo = periodo,
                     gales = tipo, paridade = paridade, 
                     emoji_dir = "⬆" if direcao.lower() == "call" else "⬇", direcao = direcao.upper()
@@ -526,7 +527,11 @@ class Telegram:
         Função que mostra os botões do menu
         Chamada quando fala /comandos
         '''
-        nome = comando["from"]["first_name"] + " " + comando["from"]["last_name"]
+        user = comando["from"]
+        try:
+            nome = user["first_name"] + " " + user["last_name"]
+        except:
+            nome = ""
 
         keyboard = InlineKeyboardMarkup(inline_keyboard = [
             [InlineKeyboardButton(
@@ -617,9 +622,7 @@ class Telegram:
             opcoes = []
             for key, value in self.listas_de_entradas.items():
                 if value['on'] and not value['deleted']:
-                    opcoes.append(
-                        str(key) + " - " + value['nome'])
-                    value['deleted'] = True
+                    opcoes.append(str(key) + " - " + value['nome'])
 
             botoes = []
             for opcao in opcoes:
@@ -701,6 +704,7 @@ class Telegram:
                     try:
                         key, nome = comando['text'].split(" - ")
                         self.listas_de_entradas[int(key)]['on'] = False
+                        self.listas_de_entradas[int(key)]['deleted'] = False
                         self.bot.sendMessage(
                             chat_id, "Transmissão cancelada", 
                             reply_markup = ReplyKeyboardRemove())
@@ -709,9 +713,7 @@ class Telegram:
                             "Não consegui parar a transmissão", 
                             reply_markup = ReplyKeyboardRemove())
                     self.parar_transmissao = False
-                elif comando.get('text') in [
-                    "/comandos", 
-                    "/start"]:
+                else:
                     self.mostrar_comandos(comando)
             elif comando['chat'].get("type") in [
                 "group", "supergroup", "channel"]:
