@@ -40,16 +40,20 @@ class Config(Frame):
         except Exception as e:
             print(e)
 
+    def tratar_dados(self, info):
+        if info['canal'] != "": info['canal'] = info['canal'].strip().replace(" ", '').split(",")
+        else: info['canal'] = []
+
+        if info['id'] != "": info['id'] = list(map(int, info['id'].strip().replace(" ", "").split(",")))
+        else: info['id'] = []
+        return info
+
     def salvar(self):
         info = {
             key: value.get() for key, value in self.entradas.items()
         }
-        info['canal'] = info['canal'].strip().replace(" ", '').split(",")
-        if info['id'] != "":
-            info['id'] = list(
-                map(int, info['id'].strip().replace(" ", "").split(",")))
-        else:
-            info['id'] = []
+        info = self.tratar_dados(info)
+
         with open("settings.json", "w") as file:
             json.dump(info, file, indent= 2)
 
@@ -60,12 +64,8 @@ class Config(Frame):
         info = {
             key: value.get() for key, value in self.entradas.items()
         }
-        info['canal'] = info['canal'].strip().replace(" ", '').split(",")
-        if info['id'] != "":
-            info['id'] = list(
-                map(int, info['id'].strip().replace(" ", "").split(",")))
-        else:
-            info['id'] = []
+        info = self.tratar_dados(info)
+
         self.janela.destroy()
         bot.Telegram(info["token"], info["canal"], info["id"])
 
