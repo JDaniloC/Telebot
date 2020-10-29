@@ -1,12 +1,5 @@
-try:
-    import amanobot
-except ModuleNotFoundError:
-    from subprocess import call
-    call(["pip", "install", "amanobot"])
-    import amanobot
-
 from iqoptionapi.stable_api import IQ_Option
-import time, pprint, traceback, json, re, threading, sys
+import time, pprint, traceback, json, re, threading, sys, amanobot
 from datetime import datetime
 from amanobot.loop import MessageLoop
 from amanobot.exception import (

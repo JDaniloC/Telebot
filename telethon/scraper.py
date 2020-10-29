@@ -1,11 +1,13 @@
 from telethon.sync import TelegramClient
 from telethon.errors import *
-from telethon.tl.functions.messages import GetDialogsRequest
+from telethon.tl.functions.messages import DeleteMessagesRequest, GetDialogsRequest
 from telethon.tl.types import InputPeerEmpty, InputPeerChannel, InputPeerUser
 from telethon.tl.functions.channels import InviteToChannelRequest
 from telethon.tl.functions.contacts import AddContactRequest, DeleteContactsRequest
+from telethon import functions
 from datetime import datetime
 import json, traceback, asyncio
+from pprint import pprint
 
 async def captura_grupo(client, escolha = None):
     '''
@@ -124,8 +126,15 @@ async def interagir(
                 # await asyncio.sleep(30)
                 
                 # Adiciona no grupo
-                await client(InviteToChannelRequest(
+                mensagem_adicao =  await client(InviteToChannelRequest(
                     entidade_principal, [usuario]))
+                
+                # Apaga a mensagem
+                id_mensagem = json.loads(mensagem_adicao.to_json())['updates']
+                if id_mensagem != []:
+                    await client(functions.channels.DeleteMessagesRequest(
+                        channel = entidade_principal, id = [id_mensagem[0]['id']]
+                    ))
                 
                 # # Exclui dos contatos
                 # await asyncio.sleep(60)
