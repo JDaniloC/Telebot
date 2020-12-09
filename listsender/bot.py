@@ -83,8 +83,7 @@ class Telegram:
         self.bot = amanobot.Bot(token)
         self.my_id = self.bot.getMe()['id']
         self.listas_de_entradas = {}
-        self.channel = channel
-        self.meu_id = meu_id
+        self.channel, self.meu_id = channel, meu_id
         self.cadeado = threading.Lock()
         
         self.IQ = IQ_Option("hiyivo1180@tmail7.com", "senha123")
@@ -94,6 +93,7 @@ class Telegram:
         self.escolher_lista = False
         self.esperar_lista = False
         self.parar_transmissao = False
+        self.esperar_grupo = False
         self.lista_atual = 1
 
         MessageLoop(self.bot, {
@@ -264,13 +264,21 @@ class Telegram:
                     self.bot = amanobot.Bot(self.token)
                     self.bot.sendMessage(canal, mensagem_parcial)
 
-    def mandar_resultado(
-        self, message_id, paridade, hora_entrada, 
-        timeframe, direcao, max_gales, atual, apagar):
-        time.sleep(292)
-        timeframe *= 60
-        espera = datetime.now().timestamp() + (timeframe * 3) + 10
+    def enviar_relatorio(self, paridade, timeframe, hora_entrada, 
+        ordem, direcao, texto_gales, message_id):
+        tendencia, rsi, taxa = self.calcular_tendencia(
+                paridade, timeframe)
+        suporte_resistencia = self.devolve_suporte_resistencia(
+            paridade, timeframe, taxa)
+        self.editar_mensagem(message_id, 
+            __import__("templates").operacao.format(
+            paridade = paridade, timeframe = timeframe // 60, 
+            hora_entrada = hora_entrada, ordem = ordem, 
+            direcao = direcao.upper(), gales = texto_gales,
+            taxa = taxa, tendencia = tendencia, rsi = rsi,
+            suporte_resistencia = suporte_resistencia))
 
+    def verificar_aberto(self, paridade, timeframe):
         abertas = self.IQ.get_all_open_time()
         esta_aberto = True
         abertas_digital = [x for x in abertas['digital'] 
@@ -285,23 +293,23 @@ class Telegram:
                 paridade in abertas_digital or paridade in
                 [x for x in abertas['binary'] 
                 if abertas['binary'][x]['open']])
+        return esta_aberto
 
-        gales = 0
-        win = False
-        texto_gales = f"🐔 Até {max_gales[0]} gales" if len(max_gales) == 1 else ""
+    def mandar_resultado(
+        self, message_id, paridade, hora_entrada, timeframe, 
+        direcao, max_gales, atual, apagar, texto_gales = ""):
+        time.sleep(240)
         ordem = '⬆' if direcao.lower() == "call" else '⬇'
+        gales, win, timeframe = 0, False, timeframe * 60
+        if len(max_gales) == 1:
+            texto_gales = f"🐔 Até {max_gales[0]} gales" 
+
+        esta_aberto = self.verificar_aberto(paridade, timeframe)
+        espera = datetime.now().timestamp() + (timeframe * 3) + 65
+
         if esta_aberto:
-            tendencia, rsi, taxa = self.calcular_tendencia(
-                paridade, timeframe)
-            suporte_resistencia = self.devolve_suporte_resistencia(
-                paridade, timeframe, taxa)
-            self.editar_mensagem(message_id, __import__("templates").operacao.format(
-                paridade = paridade, timeframe = timeframe // 60, 
-                hora_entrada = hora_entrada, ordem = ordem, 
-                direcao = direcao.upper(), gales = texto_gales,
-                taxa = taxa, tendencia = tendencia, rsi = rsi,
-                suporte_resistencia = suporte_resistencia
-            ))
+            self.enviar_relatorio(paridade, timeframe, hora_entrada, 
+                ordem, direcao, texto_gales, message_id)
 
             time.sleep(espera - time.time())
 
@@ -320,8 +328,8 @@ class Telegram:
 
         if len(max_gales) == 1 and gales == 2 and max_gales[0] == 1:
             win = False
-
-        resultado = '🔒' if not esta_aberto else (gales * '🐔') + '✅' if win else '❌'
+        resultado = '🔒' if not esta_aberto else (
+            gales * '🐔') + '✅' if win else '❌'
 
         resposta = __import__("templates").resultado.format(
             paridade = paridade, timeframe = timeframe // 60, 
@@ -354,8 +362,7 @@ class Telegram:
         self.editar_mensagem(message_id, resposta)
 
         if apagar:
-            for canal in self.channel:
-                self.mandar_parcial(canal, atual)
+            self.mandar_parcial(atual)
             del self.listas_de_entradas[atual]
 
     def calcular_tendencia(
@@ -530,18 +537,22 @@ class Telegram:
             [InlineKeyboardButton(
                 text = "Registrar nova lista", 
                 callback_data = "newlist"
-            )],
-            [InlineKeyboardButton(
-                text = "Ver lista registrada", 
+            ), 
+            InlineKeyboardButton(
+                text = "Ver listas registradas", 
                 callback_data = "showlist"
             )],
             [InlineKeyboardButton(
                 text = "Começar transmissão", 
                 callback_data = "start"
-            )],
-            [InlineKeyboardButton(
+            ),
+            InlineKeyboardButton(
                 text = "Parar transmissão",
                 callback_data = "stop"
+            )],
+            [InlineKeyboardButton(
+                text = "Adicionar novo grupo", 
+                callback_data = "newgroup"
             )],
             [InlineKeyboardButton(
                 text = "Desligar bot", 
@@ -563,6 +574,7 @@ class Telegram:
         query_id, from_id, query_data = amanobot.glance(comando, flavor = "callback_query")
 
         self.esperar_lista = False
+        self.esperar_grupo = False
         self.escolher_lista = False
         self.parar_transmissao = False
 
@@ -579,6 +591,13 @@ class Telegram:
         """
             )
             self.esperar_lista = True
+        elif query_data == "newgroup":
+            print("Entrando no modo de novo grupo")
+            self.bot.answerCallbackQuery(
+                query_id, text = "Modo adicionar grupo")
+            self.bot.sendMessage(
+                from_id, "Adicione o bot no grupo.")
+            self.esperar_grupo = True
         elif query_data == "showlist":
             print("Entrando no modo de mostragem")
             self.bot.answerCallbackQuery(
@@ -716,7 +735,9 @@ class Telegram:
                     adicionar = adicionar.get('id') == self.my_id
                 elif remover:
                     remover = remover.get('id') == self.my_id
-                if adicionar and comando['chat']['id'] not in self.channel:
+                if (self.esperar_grupo and adicionar and 
+                    comando['chat']['id'] not in self.channel):
+                    self.esperar_grupo = False
                     self.channel.append(comando['chat']['id'])
                 elif remover and comando['chat']['id'] in self.channel:
                     self.channel.remove(comando['chat']['id'])

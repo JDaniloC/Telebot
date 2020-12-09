@@ -27,7 +27,8 @@ class Telegram:
         self.channel = channel
         self.id_permitidos = meu_id
         self.invertido = False
-        
+        self.proxima = False
+
         self.bot = amanobot.Bot(token)
         self.meta_path = Path(meta_path)
         self.cadeado = threading.Lock()
@@ -210,9 +211,10 @@ class Telegram:
                     self.bot = amanobot.Bot(self.token)
                     self.bot.sendMessage(canal, mensagem_parcial)
 
-    def mandar_resultado(self, message_id, timestamp, paridade, hora_entrada, 
-        timeframe, direcao, max_gales):
-        self.esperarAte(timestamp)
+    def mandar_resultado(self, message_id, timestamp, 
+        paridade, hora_entrada, timeframe, direcao, max_gales):
+        adicao = 0 if not self.proxima else timeframe * 60 - 3
+        self.esperarAte(timestamp + adicao)
         
         timeframe *= 60
         espera = datetime.now().timestamp() + (timeframe * 3) + 10
@@ -481,6 +483,10 @@ class Telegram:
                 callback_data = "invert"
             )],
             [InlineKeyboardButton(
+                text = "Enviar no próximo", 
+                callback_data = "next"
+            )],
+            [InlineKeyboardButton(
                 text = "Parar transmissão",
                 callback_data = "stop"
             )],
@@ -506,7 +512,7 @@ class Telegram:
         self.esperar_grupo = False
 
         if query_data == "newgroup":
-            print("Entrando no modo de recebimento")
+            print("Entrando no modo de novo grupo")
             self.bot.answerCallbackQuery(
                 query_id, text = "Modo adicionar grupo")
             self.bot.sendMessage(
@@ -518,6 +524,13 @@ class Telegram:
             print(f"Invertendo entradas para {self.invertido}")
             self.bot.answerCallbackQuery(
                 query_id, text = f"Inverter: {self.invertido}")
+
+        elif query_data == "next":
+            self.proxima = not self.proxima
+            print(f"Irá enviar na próxima: {self.proxima}".replace(
+                "True", "Sim").replace("False", "Não"))
+            self.bot.answerCallbackQuery(
+                query_id, text = f"Na próxima: {self.proxima}")
 
         elif query_data == "start":
             print("Entranho no modo de transmissão")
@@ -547,8 +560,8 @@ class Telegram:
 
             if chat_id in self.id_permitidos:
                 self.mostrar_comandos(comando)
-            elif self.esperar_grupo and comando['chat'].get(
-                "type") in ["group", "supergroup", "channel"]:
+            elif comando['chat'].get("type") in [
+                "group", "supergroup", "channel"]:
                 adicionar = comando.get('new_chat_participant')
                 remover = comando.get('left_chat_participant')
                 if adicionar:
@@ -557,7 +570,8 @@ class Telegram:
                     remover = remover.get('id') == self.my_id
                 
                 identificador = comando['chat']['id']
-                if adicionar and identificador not in self.channel:
+                if (self.esperar_grupo and adicionar and 
+                    identificador not in self.channel):
                     self.esperar_grupo = False
                     self.channel.append(identificador)
                 elif remover and identificador in self.channel:

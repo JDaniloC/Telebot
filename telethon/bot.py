@@ -154,7 +154,7 @@ class Interface(Frame):
 
     def carregar(self):
         try:
-            with open("dados.json", "r+") as file:
+            with open("config/dados.json", "r+") as file:
                 dados = json.load(file)
             for index, dado in enumerate(dados):
                 for key, value in dado.items():
@@ -174,7 +174,7 @@ class Interface(Frame):
                 resultado.append(client)
         
         # Comentar essa parte para a versão trial
-        with open("dados.json", "w") as file:
+        with open("config/dados.json", "w") as file:
             json.dump(resultado, file, indent = 2)
 
         # Fazer o botão pausar e ter opção mandar mensagem
@@ -217,7 +217,7 @@ def devolve_licenca():
             dia, mes, ano = list(map(int, data.split("/")))
             hora, minuto = list(map(int, horario.split(":")))
     except:
-        dia, mes, ano, hora, minuto = 28, 10, 2020, 0, 0
+        dia, mes, ano, hora, minuto = 1, 1, 2021, 0, 0
     
     data_final = datetime(ano, mes, dia, hora, minuto)
     tempo_restante = datetime.timestamp(data_final) - datetime.timestamp(datetime.now())

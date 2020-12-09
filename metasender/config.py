@@ -1,6 +1,9 @@
 import json, bot
 from tkinter import *
+from os import listdir
 from tkinter import messagebox
+from datetime import timedelta, datetime
+from cryptography.fernet import Fernet
 
 class Config(Frame):
     def __init__(self, janela):
@@ -42,8 +45,8 @@ class Config(Frame):
             print(e)
 
     def tratar_dados(self, info):
-        if info['canal'] != "": info['canal'] = info['canal'].strip().replace(" ", '').split(",")
-        else: info['canal'] = []
+        if info['canais'] != "": info['canais'] = info['canais'].strip().replace(" ", '').split(",")
+        else: info['canais'] = []
 
         if info['id'] != "": info['id'] = list(map(int, info['id'].strip().replace(" ", "").split(",")))
         else: info['id'] = []
@@ -73,7 +76,33 @@ class Config(Frame):
         bot.Telegram(
             info["token"], info["canais"], info["id"], info["metatrader"])
 
+def devolve_licenca():
+    key = b'5oa6VUCRinbN50aH5XT7gOfrbdCeOaEUembWDV3EIW4='
+    f = Fernet(key)
+    try:
+        files = listdir(".")
+        indice = list(map(lambda x:".key" in x, files)).index(True)
+        with open(files[indice], "rb") as file:
+            message = f.decrypt(file.readline())
+            message = message.decode()
+            data, horario = message.split("|")
+            dia, mes, ano = list(map(int, data.split("/")))
+            hora, minuto = list(map(int, horario.split(":")))
+    except:
+        dia, mes, ano, hora, minuto = 9, 11, 2020, 0, 0
+    
+    data_final = datetime(ano, mes, dia, hora, minuto)
+    tempo_restante = datetime.timestamp(data_final) - datetime.timestamp(datetime.now())
+
+    return tempo_restante
+
 if __name__ == "__main__":
-    janela = Tk()
-    janela.title("Config")
-    Config(janela).mainloop()
+    restante = devolve_licenca()
+    if restante > 0:
+        horas_minutos = timedelta(seconds = restante)
+        print(str(horas_minutos)[:-7].replace('days', 'dias'))
+        janela = Tk()
+        janela.title("Config")
+        Config(janela).mainloop()
+    else:
+        input("O período teste acabou.")

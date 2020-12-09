@@ -66,10 +66,10 @@ def get_userprofile(user):
     }
 
 def guarda_usuario(info):
-    with open("usuarios.json", "r+", encoding = "utf-8") as file:
+    with open("config/usuarios.json", "r+", encoding = "utf-8") as file:
         lista = json.load(file)
     lista.append(info)
-    with open("usuarios.json", "w", encoding = "utf-8") as file:
+    with open("config/usuarios.json", "w", encoding = "utf-8") as file:
         json.dump(lista, file, indent = 2)
 
 total_capturado = 0
@@ -248,7 +248,7 @@ async def main(
 
 
 if __name__ == "__main__":
-    with open("dados.json") as dados:
+    with open("config/dados.json") as dados:
         usuarios = json.load(dados)
 
     loop = asyncio.get_event_loop()
