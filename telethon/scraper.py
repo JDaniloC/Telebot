@@ -1,48 +1,11 @@
-from telethon.sync import TelegramClient
-from telethon.errors import *
-from telethon.tl.functions.messages import DeleteMessagesRequest, GetDialogsRequest
-from telethon.tl.types import InputPeerEmpty, InputPeerChannel, InputPeerUser
 from telethon.tl.functions.channels import InviteToChannelRequest
-from telethon.tl.functions.contacts import AddContactRequest, DeleteContactsRequest
+from telethon.tl.functions.messages import GetDialogsRequest
+from telethon.tl.types import InputPeerEmpty, InputPeerUser
+from telethon.sync import TelegramClient
+import json, traceback, asyncio
 from telethon import functions
 from datetime import datetime
-import json, traceback, asyncio
-from pprint import pprint
-
-async def captura_grupo(client, escolha = None):
-    '''
-    Captura um grupo da lista de conversas do client
-    '''
-    conversas = []
-    ultima_data = None
-    maximo_conversas = 200
-    grupos = []
-
-    response = await client(GetDialogsRequest(
-                offset_date = ultima_data,
-                offset_id = 0,
-                offset_peer = InputPeerEmpty(),
-                limit = maximo_conversas,
-                hash = 0
-            ))
-    conversas.extend(response.chats)
-
-    for chat in conversas:
-        try:
-            if chat.megagroup == True:
-                grupos.append(chat)
-                if escolha != None and escolha.title == chat.title:
-                    return chat
-        except:
-            continue
-
-    print('\nLista de grupos:')
-    for index, group in enumerate(grupos):
-        print(str(index) + ' - ' + group.title)
-    grupo_alvo = grupos[int(input("Digite o número correspondente: "))]
-
-    return grupo_alvo
-
+from telethon.errors import *
 
 def get_userprofile(user):
     if user.username:
@@ -72,187 +35,209 @@ def guarda_usuario(info):
     with open("config/usuarios.json", "w", encoding = "utf-8") as file:
         json.dump(lista, file, indent = 2)
 
-total_capturado = 0
+class Telegram:
+    def __init__(self):
+        self.pausar, self.limitar = 30, 45
+        self.offset, self.filtro = 0, 7
+        self.usuarios = []
+        self.mensagem = {
+            "msg": "", "path": "", "audio": False }
+        self.clients = []
+        self.output = None
+        self.prompt = None
+        self.list_groups = None
+        self.lista_clients = {}
+        self.total_capturado = 0
+        self.escolhendo_destino = False
 
-async def interagir(
-    client, grupo_alvo, entidade_principal, tempo_pausa, modo = "add", 
-    offset = 0, mensagem = {}, limitar = 200, filtro_online = 360):
-    global total_capturado
-    print(f'Capturando membros... do {grupo_alvo.title}')
-    cont = 0
-    pausar = False
-    print("Começando a partir do", offset)
-    async for user in client.iter_participants(grupo_alvo, aggressive=True):
-        if offset > 0:
-            offset -= 1
-            continue
-        contato = get_userprofile(user)
-        for blacklist in [
-            "bot", "encarregado", "admin", "group help", 
-            "suport", "suporte", "support"]:
-            if blacklist in contato['name'].lower():
-                print(f"Pulando {contato['name']}")
-                continue
-        if hasattr(user.status, "was_online"):
-            online = user.status.was_online.replace(tzinfo = None)
-            tempo = datetime.now() - online
-            if not tempo.days < filtro_online:
-                continue
-        try:
-            usuario = InputPeerUser(contato['id'], contato['hash'])
-            if modo == "msg":
-                print(f"Enviando mensagem para {contato['name']}")
-                await client.send_message(usuario, mensagem['msg'])
-                if mensagem['path'] != "":
-                    await client.send_file(
-                        usuario, mensagem['path'], 
-                        voice_note = mensagem['audio'])
-            elif modo == "save":
-                print(f"Guardando {contato['name']}")
-                identificador, nome = contato['name'].split(" - ")
-                if identificador != "":
-                    guarda_usuario(identificador)
+    def adicionar_funcoes(self, output, prompt, list_groups):
+        self.output = output
+        self.prompt = prompt
+        self.list_groups = list_groups
+
+    async def conectar(self):
+        '''
+        Percorre os contatos se conectando em cada um deles.
+        Poderá pedir uma senha do telegram.
+        '''
+        for user in self.usuarios:
+            api_id = user['id']
+            api_hash = user['hash']
+            numero_celular = user['number']
+
+            client = TelegramClient(
+                numero_celular, api_id, api_hash)
+            await client.connect()
+            if not await client.is_user_authorized():
+                self.output(f"Enviando um código para: {numero_celular}.")
+                await client.send_code_request(numero_celular)
+                try:
+                    await client.sign_in(numero_celular, 
+                        self.prompt(f"Coloque o código que chegar no número {numero_celular}")())
+                    self.clients.append(client)
+                except PhoneCodeExpiredError:
+                    self.output("Você demorou de mais pra colocar o código")
+                except PhoneCodeInvalidError:
+                    self.output("Código errado!")
             else:
-                # print(f"Adicionando {contato['name']} do grupo {grupo_alvo.title}")
-                # username = user.username
-                # number = user.phone 
-                # first_name = user.first_name
-                # last_name = user.last_name
-                # # Adiciona nos contatos
-                # await client(AddContactRequest(
-                #     user.id, number if number != None else "",
-                #     first_name if first_name != None else f"{cont}", 
-                #     last_name if last_name != None else ""))
-                # await asyncio.sleep(30)
-                
-                # Adiciona no grupo
-                mensagem_adicao =  await client(InviteToChannelRequest(
-                    entidade_principal, [usuario]))
-                
-                # Apaga a mensagem
-                id_mensagem = json.loads(mensagem_adicao.to_json())['updates']
-                if id_mensagem != []:
-                    await client(functions.channels.DeleteMessagesRequest(
-                        channel = entidade_principal, id = [id_mensagem[0]['id']]
-                    ))
-                
-                # # Exclui dos contatos
-                # await asyncio.sleep(60)
-                # for x in [username, first_name, last_name, number, user.id]:
-                #     if x != None:
-                #         try:
-                #             result = await client(
-                #               DeleteContactsRequest([x]))
-                #             break
-                #         except:
-                #             pass
-            cont += 1
-            pausar = True
-            if cont >= limitar:
-                print(f"Preservando conta, parando aos {limitar}.")
-                break
-        except PeerFloodError:
-            print("Muitas requisições... Usuário bloqueado, tente novamente mais tarde")
-            break
-        except FloodWaitError:
-            print("Está sendo rápido de mais, espere alguns minutos!")
-            break
-        except ChannelInvalidError:
-            print("Erro na escolha do grupo ao qual vai receber membros.")
-            break
-        except UserBannedInChannelError:
-            print(f"Esse usuário não pode adicionar contatos.")
-            break
-        except UserPrivacyRestrictedError:
-            print(f"{contato['name']} não permite ser adicionado em um grupo.")
-        except UserChannelsTooMuchError:
-            print(f"{contato['name']} já está em grupos de mais.")
-        except ChatAdminRequiredError:
-            print("Você precisa de permissões de administrador para fazer isso.")
-        except UserNotMutualContactError:
-            print(f"{contato['name']} só é adicionado por amigos.")
-        except UserKickedError:
-            print(f"{contato['name']} foi expulso do grupo.")
-        except:
-            traceback.print_exc()
-            print("Erro inesparado, continuando operação...")
-        if pausar:
-            await asyncio.sleep(tempo_pausa)
-            pausar = False
-    total_capturado += cont
-    print(f"\nO bot atingiu {cont} membros no grupo {grupo_alvo.title}\n")
-
-async def main(
-    usuarios, pausar = 30, modo = "msg", offset = 0, 
-    mensagem = "", limitar = 50, filtro_online = 7):
-    global total_capturado
+                self.output(f"{numero_celular} conectado com sucesso.")
+                self.clients.append(client)
+        if len(self.clients) > 0:
+            for client in self.clients:
+                self.lista_clients[client] = {
+                    "alvo": None, "destino": None}
+            return True
+        return False
     
-    with open("usuarios.json", "w") as file:
-        json.dump([], file)
-    clients = []
+    async def listar_grupos(self, client = None, escolhido = None):
+        '''
+        Captura um grupo da lista de conversas do client
+        '''
+        if client is None:
+            client = list(self.lista_clients.keys())[0]
+        conversas = []
+        self.grupos = []
 
-    # # Conexão # #
-    for user in usuarios:
-        api_id = user['id']
-        api_hash = user['hash']
-        numero_celular = user['number']
+        response = await client(GetDialogsRequest(
+                    offset_date = None, hash = 0,
+                    offset_id = 0, limit = 100,
+                    offset_peer = InputPeerEmpty()))
+        conversas.extend(response.chats)
 
-        client = TelegramClient(numero_celular, api_id, api_hash)
-        await client.connect()
-        if not await client.is_user_authorized():
-            print(f"{numero_celular} não conseguiu conectar, enviando código.")
-            await client.send_code_request(numero_celular)
+        for chat in conversas:
             try:
-                await client.sign_in(numero_celular, input("Coloque o código: "))
-                clients.append(client)
-            except PhoneCodeExpiredError:
-                print("Você demorou de mais pra colocar o código")
-            except PhoneCodeInvalidError:
-                print("Código errado!")
-        else:
-            print(f"{numero_celular} conectado com sucesso.")
-            clients.append(client)
-
-    lista_clients = {}
-    if modo == "add":
-        grupo_principal = None
-        for client in clients:
-            print("Escolha o grupo que vai RECEBER os membros: ")
-            grupo_principal = await captura_grupo(client, grupo_principal)
-
-            lista_clients.update({
-                client: await client.get_input_entity(grupo_principal.id)
-            })
+                if chat.megagroup == True:
+                    self.grupos.append(chat)
+                    if escolhido != None and escolhido.title == chat.title:
+                        return chat
+            except:
+                continue
         
-    esperar = []
-    
-    print("\nEscolha um grupo para cada bot PEGAR membros:")
-    grupo_alvo = None
-    for client in clients:
-        grupo_alvo = await captura_grupo(client, grupo_alvo)
+        if escolhido == None:
+            for index, group in enumerate(self.grupos):
+                self.list_groups(group.title, index)
+            return True
+        return False
 
-        if modo == "add":
-            entidade_principal = lista_clients[client]
-        else:
-            entidade_principal = None
-        task = asyncio.create_task(interagir(
-            client, grupo_alvo, entidade_principal, pausar, modo, 
-            offset, mensagem, limitar, filtro_online))
-        
-        esperar.append(task)
+    async def escolher_grupo(self, indice):
+        identificador = "origem"
+        if self.escolhendo_destino:
+            identificador = "destino"
+            self.escolhendo_destino = False
+        alvo = self.grupos[indice]
+        erros = []
+        for client in self.lista_clients:
+            grupo = await self.listar_grupos(client, alvo)
+            if grupo and identificador == "destino":
+                self.lista_clients[client].update({identificador: 
+                    await client.get_input_entity(grupo.id)})
+            elif grupo:
+                self.lista_clients[client].update({
+                    identificador: grupo})
+            else:
+                erros.append(client)
+        return [await erro.get_me()["phone"] for erro in erros]
 
-        offset += limitar
+    async def rodar_programa(self, modo):
+        esperar = []
+        offset = self.offset
+        for client in self.lista_clients:
+            grupo_origem = self.lista_clients[client]["origem"]
+            grupo_destino = self.lista_clients[client]["destino"]
 
-    await asyncio.wait(esperar)
-    print(f"Interagiu com um total de {total_capturado}")
+            task = asyncio.create_task(self.interagir(
+                client, grupo_origem, grupo_destino, modo))
+            
+            esperar.append(task)
+            offset += self.limitar
 
+        await asyncio.wait(esperar)
 
-if __name__ == "__main__":
-    with open("config/dados.json") as dados:
-        usuarios = json.load(dados)
-
-    loop = asyncio.get_event_loop()
-
-    loop.run_until_complete(main(usuarios))
-
-    print("Programa finalizado.")
+    async def interagir(
+        self, client, grupo_origem, grupo_destino, modo = "add"):
+        self.output(f'Capturando membros... do {grupo_origem.title}')
+        cont, pausar = 0, False
+        offset = self.offset
+        self.output(f"Começando a partir do {offset}")
+        async for user in client.iter_participants(
+            grupo_origem, aggressive=True):
+            if offset > 0:
+                offset -= 1
+                continue
+            contato = get_userprofile(user)
+            for blacklist in [
+                "bot", "encarregado", "admin", "group help", 
+                "suport", "suporte", "support"]:
+                if blacklist in contato['name'].lower():
+                    self.output(f"Pulando {contato['name']}")
+                    continue
+            if hasattr(user.status, "was_online"):
+                online = user.status.was_online.replace(tzinfo = None)
+                tempo = datetime.now() - online
+                if not tempo.days < self.filtro:
+                    continue
+            try:
+                usuario = InputPeerUser(contato['id'], contato['hash'])
+                if modo == "msg":
+                    self.output(f"Enviando mensagem para {contato['name']}")
+                    await client.send_message(usuario, self.mensagem['msg'])
+                    if self.mensagem['path'] != "":
+                        await client.send_file(
+                            usuario, self.mensagem['path'], 
+                            voice_note = self.mensagem['audio'])
+                elif modo == "save":
+                    self.output(f"Guardando {contato['name']}")
+                    identificador, nome = contato['name'].split(" - ")
+                    if identificador != "":
+                        guarda_usuario(identificador)
+                else:
+                    # Adiciona no grupo
+                    mensagem_adicao =  await client(InviteToChannelRequest(
+                        grupo_destino, [usuario]))
+                    
+                    # Apaga a mensagem
+                    id_mensagem = json.loads(mensagem_adicao.to_json())['updates']
+                    if id_mensagem != []:
+                        await client(functions.channels.DeleteMessagesRequest(
+                            channel = grupo_destino, 
+                            id = [id_mensagem[0]['id']]
+                        ))
+                self.output(f"Adicionado {contato['name']}")
+                cont += 1
+                pausar = True
+                if cont >= self.limitar:
+                    self.output(f"Preservando conta, parando aos {self.limitar}.")
+                    break
+            except PeerFloodError:
+                self.output("Muitas requisições... Usuário bloqueado, tente novamente mais tarde")
+                break
+            except FloodWaitError:
+                self.output("Está sendo rápido de mais, espere alguns minutos!")
+                break
+            except ChannelInvalidError:
+                self.output("Erro na escolha do grupo ao qual vai receber membros.")
+                break
+            except UserBannedInChannelError:
+                self.output(f"Esse usuário não pode adicionar contatos.")
+                break
+            except UserPrivacyRestrictedError:
+                self.output(f"{contato['name']} não permite ser adicionado em um grupo.")
+            except UserChannelsTooMuchError:
+                self.output(f"{contato['name']} já está em grupos de mais.")
+            except ChatAdminRequiredError:
+                self.output("Você precisa de permissões de administrador para fazer isso.")
+            except UserNotMutualContactError:
+                self.output(f"{contato['name']} só é adicionado por amigos.")
+            except UserKickedError:
+                self.output(f"{contato['name']} foi expulso do grupo.")
+            except ChatWriteForbiddenError:
+                self.output(f"Você não pode falar nesse grupo: {grupo_origem.title}")
+                break
+            except:
+                traceback.print_exc()
+                print("Erro inesparado, continuando operação...")
+            if pausar:
+                await asyncio.sleep(self.pausar)
+                pausar = False
+        self.total_capturado += cont
+        self.output(f"\nO bot atingiu {cont} membros no grupo {grupo_origem.title}\n")

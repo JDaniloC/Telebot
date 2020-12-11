@@ -1,16 +1,18 @@
-inicio = "Transmissão iniciada\nBom trade para todos."
+inicio = """
+Transmissão iniciada
+Bom trade para todos.
+"""
 
 completo = """
 🚀 Resultado do dia 🚀
-    {timeframe} {gales}
+    M{timeframe} {gales}
 
 {result}
 
 🎯 Assertividade: {quality}%"""
 
 parcial = '''
-  🎯 Bot 🎯
-
+  🎯 Bot Teste 🎯
 Lista {gales} {timeframe}
 
 ✅ Vitórias {win}
@@ -24,7 +26,7 @@ Lista {gales} {timeframe}
 '''
 
 resultado = """
-  🎯 Bot 🎯
+  🎯 Bot Teste 🎯
 
 📊 Ativo: {paridade}
 ⏰ Período: M{timeframe}
@@ -35,7 +37,7 @@ Resultado: {resultado}
 """
 
 operacao = """
-  🎯 Bot 🎯
+  🎯 Bot Teste 🎯
 
 📊 Ativo: {paridade}
 ⏰ Período: M{timeframe}
@@ -51,7 +53,7 @@ operacao = """
 """
 
 entradas = """
-  🎯 Bot 🎯
+  🎯 Bot Teste 🎯
 
 🔰 ENTRADA {hora}
 ⏱ Período: {periodo}
