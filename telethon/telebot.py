@@ -7,7 +7,8 @@ config = {
     "limitar": 45,
     "pausar": 30,
     "offset": 0,
-    "filtro": 7
+    "filtro": 7,
+    "resume": 0
 }
 
 @eel.expose
@@ -19,7 +20,8 @@ def carregar_config(contacts = []):
 
 @eel.expose
 def conectar(contatos):
-    programa.adicionar_funcoes(eel.exibir, eel.receber, eel.listGroups)
+    programa.adicionar_funcoes(
+        eel.exibir, eel.perguntar, eel.listGroups)
     
     for i in range(len(contatos)):
         if contatos[i]["hash"] == "" or contatos[i]["id"] == "":
@@ -94,7 +96,7 @@ def devolve_licenca():
             dia, mes, ano = list(map(int, data.split("/")))
             hora, minuto = list(map(int, horario.split(":")))
     except:
-        dia, mes, ano, hora, minuto = 1, 1, 2021, 0, 0
+        dia, mes, ano, hora, minuto = 19, 12, 2020, 0, 0
     
     data_final = datetime(ano, mes, dia, hora, minuto)
     tempo_restante = datetime.timestamp(data_final) - datetime.timestamp(datetime.now())

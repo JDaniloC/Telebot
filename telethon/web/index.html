@@ -34,8 +34,11 @@
             <section class="message">
                 <h1> Enviar mensagem em massa </h1>
                 <textarea name="message" id="message" 
-                    cols="70" rows="10" onchange = "changeConfig()">
+                cols="70" rows="10" onchange = "changeConfig()">
                 </textarea>
+                <sub> 
+                    Percorre os membros do grupo enviando a mensagem descrita abaixo, cuidado com essa função, as pessoas podem denunciar seus números.
+                </sub>
                 <button onclick = "start('msg')" disabled> 
                     Enviar mensagem 
                 </button>
@@ -82,6 +85,8 @@
         </section>
     </main>
     <div class="output">
+        <p> <b>Adicionar pessoas</b>: Percorre os usuários do grupo origem puxando para o grupo destino. </p>
+        <p> <b>Capturar pessoas</b>: Percorre os usuários do grupo origem salvando em config/usuarios.json </p>
     </div>
     <button style = "margin-bottom: 1em"
         onclick="conectar()" 
@@ -89,10 +94,10 @@
         Conectar 
     </button>
     <div class="buttons">
-        <button onclick = "eel.listar_grupos()"> 
+        <button onclick="callListGroups(this)" id="origin"> 
             Selecionar grupo de origem
         </button>
-        <button onclick = "eel.listar_grupos(true)" disabled> 
+        <button onclick="callListGroups(this)" disabled> 
             Selecionar grupo que recebe 
         </button>
     </div>

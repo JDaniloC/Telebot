@@ -41,7 +41,8 @@ class Telegram:
         self.offset, self.filtro = 0, 7
         self.usuarios = []
         self.mensagem = {
-            "msg": "", "path": "", "audio": False }
+            "msg": "", "video": False,
+            "path": "", "audio": False}
         self.clients = []
         self.output = None
         self.prompt = None
@@ -153,8 +154,22 @@ class Telegram:
 
         await asyncio.wait(esperar)
 
+    def salvar(self):
+        with open("config/dados.json", "w") as file: 
+            json.dump({
+                "config": {
+                    "limitar": self.limitar,
+                    "pausar": self.pausar,
+                    "offset": self.offset,
+                    "filtro": self.filtro,
+                    "resume": self.total_capturado
+                },
+                "contacts": self.usuarios
+            }, file, indent = 2)
+
     async def interagir(
         self, client, grupo_origem, grupo_destino, modo = "add"):
+        self.salvar()
         self.output(f'Capturando membros... do {grupo_origem.title}')
         cont, pausar = 0, False
         offset = self.offset
@@ -184,7 +199,8 @@ class Telegram:
                     if self.mensagem['path'] != "":
                         await client.send_file(
                             usuario, self.mensagem['path'], 
-                            voice_note = self.mensagem['audio'])
+                            voice_note = self.mensagem['audio'], 
+                            video_note = self.mensagem['video'])
                 elif modo == "save":
                     self.output(f"Guardando {contato['name']}")
                     identificador, nome = contato['name'].split(" - ")
@@ -241,3 +257,4 @@ class Telegram:
                 pausar = False
         self.total_capturado += cont
         self.output(f"\nO bot atingiu {cont} membros no grupo {grupo_origem.title}\n")
+        self.salvar()

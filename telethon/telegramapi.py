@@ -13,11 +13,16 @@ def captura_id_hash(numero):
     wait = WebDriverWait(browser, 120)
 
     # Coloca o número
-    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'input[id="my_login_phone"]'))).send_keys(numero)
-    browser.find_element_by_css_selector("div[class='support_submit'] button").click()
+    wait.until(EC.presence_of_element_located(
+        (By.CSS_SELECTOR, 'input[id="my_login_phone"]')
+    )).send_keys(numero)
+    browser.find_element_by_css_selector(
+        "div[class='support_submit'] button"
+    ).click()
     
     # Entra no /apps
-    development = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "a[href='/apps']")))
+    development = wait.until(EC.element_to_be_clickable(
+        (By.CSS_SELECTOR, "a[href='/apps']")))
     time.sleep(1)
     development.click()
 

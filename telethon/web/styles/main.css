@@ -92,3 +92,7 @@ div.buttons {
     display: none;
     margin-bottom: 1em;
 }
+sub {
+    max-width: fit-content;
+    text-align: center;
+}

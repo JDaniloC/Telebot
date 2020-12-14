@@ -20,10 +20,8 @@ function exibir(mensagem) {
     output.appendChild(p)
     output.scrollTop = output.scrollHeight;
 }
-eel.expose(receber)
-function receber(mensagem) {
-    return prompt(mensagem)
-}
+eel.expose(perguntar)
+function perguntar(mensagem) { return prompt(mensagem) }
 
 eel.expose(carregarContatos)
 function carregarContatos(contatos) {
@@ -39,6 +37,12 @@ function carregarContatos(contatos) {
     })
 }
 
+function callListGroups(button) {
+    button.disabled = true;
+    const origin = (button.id === "origin") ? false : true;
+    eel.listar_grupos(origin);
+}
+
 eel.expose(listGroups)
 function listGroups(name, index) {
     document.querySelector(".groups").style.display = "flex";
@@ -49,6 +53,7 @@ function listGroups(name, index) {
         selectGroup(li);
     });
     document.querySelector(".groups ul").appendChild(li);
+    scrollTo(0, 0)
 }
 
 function selectGroup(li) {
@@ -141,6 +146,11 @@ function conectar() {
 function start(modo) {
     document.querySelectorAll(
         "input"
+    ).forEach(element => {
+        element.disabled = true;
+    })
+    document.querySelectorAll(
+        "button"
     ).forEach(element => {
         element.disabled = true;
     })
