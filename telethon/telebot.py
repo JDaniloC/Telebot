@@ -110,7 +110,7 @@ if restante > 0:
     print(str(horas_minutos)[:-7].replace('days', 'dias'))
 
     eel.init('web')
-    eel.start('index.html')
+    eel.start('index.html', port = 8004)
 else:
     input("O período teste acabou.")
 

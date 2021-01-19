@@ -1,3 +1,5 @@
+var choosingOrigin = false;
+
 function newContact() {
     const li = document.createElement('li');
     li.innerHTML = '<input placeholder="API hash" type="text">\
@@ -37,10 +39,19 @@ function carregarContatos(contatos) {
     })
 }
 
-function callListGroups(button) {
-    button.disabled = true;
-    const origin = (button.id === "origin") ? false : true;
-    eel.listar_grupos(origin);
+function callListGroups(destino = false) {
+    document.querySelectorAll(
+        "section.config .chooses button"
+    ).forEach(button => {
+        button.disabled = true;
+    })
+    choosingOrigin = !destino;
+    if (choosingOrigin) {
+        document.querySelector(
+            ".message button"
+        ).disabled = true;
+    }
+    eel.listar_grupos(destino);
 }
 
 eel.expose(listGroups)
@@ -63,21 +74,20 @@ function selectGroup(li) {
     const index = li.getAttribute("key");
     const inputList = document.querySelectorAll(
         ".chooses input")
-    if (inputList[0].value === "") {
+    document.querySelectorAll(
+        "section.config .chooses button"
+    ).forEach(button => {
+        button.disabled = false;
+    })
+    if (choosingOrigin) {
         inputList[0].value = li.innerText;
-        const buttons = document.querySelectorAll(
-            ".buttons button"
-        )
-        buttons[0].disabled = true;
-        buttons[1].disabled = false;
         document.querySelector(
             ".message button"
         ).disabled = false;
     } else {
         inputList[1].value = li.innerText;
-        document.querySelector(
-            ".buttons"
-        ).style.display = "none"
+    }
+    if (inputList[0].value !== "" && inputList[1].value !== "") {
         document.querySelector(
             "#start"
         ).style.display = "flex"
@@ -100,9 +110,11 @@ function changeConfig() {
 }
 
 function connected() {
-    document.querySelector(
-        ".buttons"
-    ).style.display = "flex"
+    document.querySelectorAll(
+        "section.config .chooses button"
+    ).forEach(button => {
+        button.disabled = false;
+    })
     document.querySelector(
         "button#connect"
     ).style.display = "none"

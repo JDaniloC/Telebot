@@ -76,6 +76,7 @@ class Telegram:
                     await client.sign_in(numero_celular, 
                         self.prompt(f"Coloque o código que chegar no número {numero_celular}")())
                     self.clients.append(client)
+                    self.output(f"{numero_celular} conectado com sucesso.")
                 except PhoneCodeExpiredError:
                     self.output("Você demorou de mais pra colocar o código")
                 except PhoneCodeInvalidError:
@@ -87,6 +88,7 @@ class Telegram:
             for client in self.clients:
                 self.lista_clients[client] = {
                     "alvo": None, "destino": None}
+            self.salvar()
             return True
         return False
     

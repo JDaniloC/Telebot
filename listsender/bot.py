@@ -1,11 +1,11 @@
-from iqoptionapi.stable_api import IQ_Option
-import time, pprint, traceback, json, re, threading, sys, amanobot
 from datetime import datetime
 from amanobot.loop import MessageLoop
-from amanobot.exception import (
-    BotWasBlockedError, BotWasKickedError)
-from amanobot.namedtuple import (InlineKeyboardMarkup, InlineKeyboardButton,
- ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove)
+from iqoptionapi.stable_api import IQ_Option
+import time, pprint, traceback, json, re, threading, sys, amanobot
+from amanobot.exception import BotWasBlockedError, BotWasKickedError
+from amanobot.namedtuple import (
+    InlineKeyboardMarkup, InlineKeyboardButton,
+    ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove)
 
 sys.path.append(".")
 
@@ -78,12 +78,12 @@ def strDateHour(number):
     return str(number) if len(str(number)) != 1 else "0" + str(number)
 
 class Telegram:
-    def __init__(self, token, channel, meu_id):
+    def __init__(self, token, channel, permitidos):
         self.token = token
         self.bot = amanobot.Bot(token)
         self.my_id = self.bot.getMe()['id']
         self.listas_de_entradas = {}
-        self.channel, self.meu_id = channel, meu_id
+        self.channel, self.permitidos = channel, permitidos
         self.cadeado = threading.Lock()
         
         self.IQ = IQ_Option("hiyivo1180@tmail7.com", "senha123")
@@ -651,35 +651,34 @@ class Telegram:
             self.bot.sendMessage(from_id, "Bot desligado")
             self.rodando = False
 
-    def pegar_gales(self, lista):
-        for entrada in lista:
-            if "1 gal" in entrada.lower():
-                return "🐔 Até 1 gale"
-            elif "2 gal" in entrada.lower():
-                return "🐔 Até 2 gales"
-        return ""
-
-    def pegar_periodo(self, lista):
-        for entrada in lista:
-            if "M15" in entrada.upper():
-                return "M15"
-            elif "M5" in entrada.upper():
-                return "M5"
-            elif "M1" in entrada.upper():
-                return "M1"
-            elif "M30" in entrada.upper():
-                return "M30"
-        return "M5"
-
     def recebe_comandos(self, comando):
         '''
         Função que é chamada caso falar no chat
         '''
+        def pegar_gales(lista):
+            for entrada in lista:
+                if "1 gal" in entrada.lower():
+                    return "🐔 Até 1 gale"
+                elif "2 gal" in entrada.lower():
+                    return "🐔 Até 2 gales"
+            return ""
+
+        def pegar_periodo(lista):
+            for entrada in lista:
+                if "M15" in entrada.upper():
+                    return "M15"
+                elif "M5" in entrada.upper():
+                    return "M5"
+                elif "M1" in entrada.upper():
+                    return "M1"
+                elif "M30" in entrada.upper():
+                    return "M30"
+            return "M5"
 
         if comando != []:
             content_type, chat_type, chat_id = amanobot.glance(comando)
 
-            if chat_id in self.meu_id:
+            if chat_id in self.permitidos:
                 if self.escolher_lista:
                     key, nome = comando['text'].split(" - ")
                     key = int(key)
@@ -698,8 +697,8 @@ class Telegram:
                 elif self.esperar_lista:
                     pprint.pprint(comando['text'])
                     entradas = comando.get('text').split("\n")
-                    tipo = self.pegar_gales(entradas)
-                    periodo = self.pegar_periodo(entradas)
+                    tipo = pegar_gales(entradas)
+                    periodo = pegar_periodo(entradas)
                     self.lista_atual += 1
                     self.listas_de_entradas[self.lista_atual] = {
                         "on": False,

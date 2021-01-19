@@ -79,8 +79,18 @@
             </sub>
             <div class="chooses">
                 <h1> Grupos </h1>
-                <input type="text" disabled placeholder="Grupo Origem">
-                <input type="text" disabled placeholder="Grupo Destino">
+                <div>
+                    <input type="text" disabled placeholder="Grupo Origem">
+                    <button onclick="callListGroups()" disabled> 
+                        <img src="images/gear.svg">
+                    </button>
+                </div>
+                <div>
+                    <input type="text" disabled placeholder="Grupo Destino">
+                    <button onclick="callListGroups(true)" disabled> 
+                        <img src="images/gear.svg">
+                    </button>
+                </div>
             </div>
         </section>
     </main>
@@ -89,18 +99,9 @@
         <p> <b>Capturar pessoas</b>: Percorre os usuários do grupo origem salvando em config/usuarios.json </p>
     </div>
     <button style = "margin-bottom: 1em"
-        onclick="conectar()" 
-        id = "connect"> 
+        onclick="conectar()" id = "connect"> 
         Conectar 
     </button>
-    <div class="buttons">
-        <button onclick="callListGroups(this)" id="origin"> 
-            Selecionar grupo de origem
-        </button>
-        <button onclick="callListGroups(this)" disabled> 
-            Selecionar grupo que recebe 
-        </button>
-    </div>
     <div class="buttons" id = "start">
         <button onclick = "start('add')"> 
             Adicionar pessoas 

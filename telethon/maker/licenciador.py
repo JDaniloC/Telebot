@@ -69,7 +69,7 @@ class Gerador(Frame):
         self.titulos = {
             "dia": IntVar(value = 1), 
             "mês": IntVar(value = 1),
-            "ano": IntVar(value = 2020),
+            "ano": IntVar(value = 2021),
             "hora": IntVar(value = 0), 
             "minuto": IntVar(value = 0)
         }
