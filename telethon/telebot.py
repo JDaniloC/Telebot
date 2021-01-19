@@ -96,7 +96,7 @@ def devolve_licenca():
             dia, mes, ano = list(map(int, data.split("/")))
             hora, minuto = list(map(int, horario.split(":")))
     except:
-        dia, mes, ano, hora, minuto = 19, 12, 2020, 0, 0
+        dia, mes, ano, hora, minuto = 1, 2, 2021, 0, 0
     
     data_final = datetime(ano, mes, dia, hora, minuto)
     tempo_restante = datetime.timestamp(data_final) - datetime.timestamp(datetime.now())
@@ -104,13 +104,13 @@ def devolve_licenca():
     return tempo_restante
 
 restante = devolve_licenca()
+eel.init('web')
+
 if restante > 0:
     horas_minutos = timedelta(seconds = restante)
-    
-    print(str(horas_minutos)[:-7].replace('days', 'dias'))
-
-    eel.init('web')
-    eel.start('index.html', port = 8004)
+    eel.changeLicense(str(horas_minutos)[:-7].replace('days', 'dias'))
 else:
-    input("O período teste acabou.")
+    eel.changeLicense("Renove a licença")
+    programa = None
 
+eel.start('index.html', port = 8004)

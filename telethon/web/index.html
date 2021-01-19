@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> TeleBot </title>
+    <link rel="shortcut icon" href="images/icone.ico" type="image/x-icon">
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/sections.css">
     <script type="text/javascript" src="./eel.js"></script>
@@ -12,10 +13,12 @@
 <body onload="carregar()">
     <span class = "groups">
         <h1> Escolha o Grupo </h1>
-        <ul>
-        </ul>
+        <ul></ul>
     </span>
-    <h1> Telebot </h1>
+    <div id = "title">
+        <h1> Telebot </h1>
+        <sup id = "license"></sup>
+    </div>
     <main>
         <div>
             <section class="contacts">
@@ -95,8 +98,14 @@
         </section>
     </main>
     <div class="output">
-        <p> <b>Adicionar pessoas</b>: Percorre os usuários do grupo origem puxando para o grupo destino. </p>
-        <p> <b>Capturar pessoas</b>: Percorre os usuários do grupo origem salvando em config/usuarios.json </p>
+        <p> 
+            <b>Adicionar pessoas</b>: 
+            Percorre os usuários do grupo origem puxando para o grupo destino. 
+        </p>
+        <p> 
+            <b>Capturar pessoas</b>: 
+            Percorre os usuários do grupo origem salvando em config/usuarios.json 
+        </p>
     </div>
     <button style = "margin-bottom: 1em"
         onclick="conectar()" id = "connect"> 

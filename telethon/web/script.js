@@ -179,3 +179,15 @@ function carregar() {
         document.querySelector("input#limit").value = config["limitar"] 
     })
 }
+
+eel.expose(changeLicense)
+function changeLicense(message) {
+    document.querySelector(
+        "sup#license"
+    ).innerText = message;
+    if (message === "Renove a licença") {
+        document.querySelector(
+            "#connect"
+        ).disabled = true;
+    }
+}
