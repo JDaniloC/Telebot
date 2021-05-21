@@ -182,12 +182,20 @@ function carregar() {
 
 eel.expose(changeLicense)
 function changeLicense(message) {
-    document.querySelector(
-        "sup#license"
-    ).innerText = message;
     if (message === "Renove a licença") {
+        document.querySelector(
+            "sup#license"
+        ).innerHTML = `<button onclick = "eel.handle_login()"> 
+            Logar </button>`;
         document.querySelector(
             "#connect"
         ).disabled = true;
+    } else {
+        document.querySelector(
+            "sup#license"
+        ).innerHTML = message
+        document.querySelector(
+            "#connect"
+        ).disabled = false;
     }
 }

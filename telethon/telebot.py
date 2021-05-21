@@ -1,7 +1,14 @@
+from telegramapi import captura_id_hash
+import eel, asyncio, json, requests, time
 from scraper import Telegram
-import eel, asyncio, json
+
+from datetime import datetime, timedelta
+from cryptography.fernet import Fernet
+from os import listdir
 
 programa = Telegram()
+eel.init('web')
+
 contatos = []
 config = {
     "limitar": 45,
@@ -10,6 +17,9 @@ config = {
     "filtro": 7,
     "resume": 0
 }
+
+def exibir(*args): eel.exibir(*args)
+def listGroups(*args): eel.listGroups(*args)
 
 @eel.expose
 def carregar_config(contacts = []):
@@ -20,12 +30,10 @@ def carregar_config(contacts = []):
 
 @eel.expose
 def conectar(contatos):
-    programa.adicionar_funcoes(
-        eel.exibir, eel.perguntar, eel.listGroups)
+    programa.adicionar_funcoes(exibir, eel.perguntar, listGroups)
     
     for i in range(len(contatos)):
         if contatos[i]["hash"] == "" or contatos[i]["id"] == "":
-            from telegramapi import captura_id_hash
             contatos[i] = captura_id_hash(contatos[i]["number"])
     carregar_config(contatos)
     programa.usuarios = contatos
@@ -78,12 +86,7 @@ try:
     modificar_config(config)
 except Exception as e: print(e)
 
-
-
-from datetime import datetime, timedelta
-from cryptography.fernet import Fernet
-from os import listdir
-def devolve_licenca():
+def verify_test():
     key = b'5oa6VUCRinbN50aH5XT7gOfrbdCeOaEUembWDV3EIW4='
     f = Fernet(key)
     try:
@@ -99,18 +102,47 @@ def devolve_licenca():
         dia, mes, ano, hora, minuto = 1, 2, 2021, 0, 0
     
     data_final = datetime(ano, mes, dia, hora, minuto)
-    tempo_restante = datetime.timestamp(data_final) - datetime.timestamp(datetime.now())
+    tempo_restante = (
+        datetime.timestamp(data_final) - 
+        datetime.timestamp(datetime.now()))
 
     return tempo_restante
 
-restante = devolve_licenca()
-eel.init('web')
+def devolve_licenca(email):
+    try:
+        response = requests.get(
+            "https://licenciador.tk/clients", 
+            params = {
+                "email": email, "bot": "telebot"
+        }).json()
+        if email in response:
+            tempo_restante = response[email]["timestamp"] - time.time()
+        else:
+            tempo_restante = -1
+    except Exception as e:
+        print(type(e), e)
+        tempo_restante = -1
+    return tempo_restante
 
-if restante > 0:
-    horas_minutos = timedelta(seconds = restante)
-    eel.changeLicense(str(horas_minutos)[:-7].replace('days', 'dias'))
-else:
-    eel.changeLicense("Renove a licença")
-    programa = None
+def verify_auth(restante):
+    global programa
+    if restante > 0:
+        programa = Telegram()
+        horas_minutos = timedelta(seconds = restante)
+        eel.changeLicense(str(horas_minutos)[:-7].replace('days', 'dias'))
+    else:
+        eel.changeLicense("Renove a licença")
+        programa = None
+        return False
+    return True
+
+@eel.expose
+def handle_login():
+    email = eel.perguntar("Digite o e-mail da sua licença: ")()
+    restante = devolve_licenca(email)
+    verify_auth(restante)    
+
+restante = verify_test()
+verify_auth(restante)
 
 eel.start('index.html', port = 8004)
