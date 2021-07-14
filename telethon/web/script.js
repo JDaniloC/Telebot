@@ -171,31 +171,34 @@ function start(modo) {
     ).disabled = true;
     eel.rodar_programa(modo);
 }
-function carregar() {
-    eel.carregar_config()(config => {
-        document.querySelector("input#pause").value  = config["pausar"] 
-        document.querySelector("input#skip").value   = config["offset"] 
-        document.querySelector("input#online").value = config["filtro"] 
-        document.querySelector("input#limit").value = config["limitar"] 
-    })
-}
 
-eel.expose(changeLicense)
-function changeLicense(message) {
-    if (message === "Renove a licença") {
-        document.querySelector(
-            "sup#license"
-        ).innerHTML = `<button onclick = "eel.handle_login()"> 
-            Logar </button>`;
-        document.querySelector(
-            "#connect"
-        ).disabled = true;
+async function login() {
+    const email = document.querySelector(
+        "#login input[type=email]")
+    const button = document.querySelector(
+        "#login button.access")
+    button.disabled = true;
+
+    const [auth, msg] = await eel.login(email.value)();
+    
+    if (auth) {
+        email.value = "";
+        $("body").load("./components/scraper.html", () => {
+            eel.carregar_config()(config => {
+                document.querySelector("input#pause").value  = config["pausar"] 
+                document.querySelector("input#skip").value   = config["offset"] 
+                document.querySelector("input#online").value = config["filtro"] 
+                document.querySelector("input#limit").value = config["limitar"] 
+            })
+
+            document.querySelector(
+                "sup#license"
+            ).innerHTML = msg
+        });
     } else {
-        document.querySelector(
-            "sup#license"
-        ).innerHTML = message
-        document.querySelector(
-            "#connect"
-        ).disabled = false;
+        document.querySelector("#login p"
+            ).innerText = msg
+        email.style.borderColor = "red";
     }
+    button.disabled = false;
 }

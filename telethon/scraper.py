@@ -109,9 +109,10 @@ class Telegram:
 
         for chat in conversas:
             try:
-                if chat.megagroup == True:
+                if chat.creator or chat.megagroup:
                     self.grupos.append(chat)
-                    if escolhido != None and escolhido.title == chat.title:
+                    if (escolhido != None and 
+                        escolhido.title == chat.title):
                         return chat
             except:
                 continue

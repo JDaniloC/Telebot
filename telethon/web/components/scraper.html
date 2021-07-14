@@ -1,0 +1,108 @@
+<span class = "groups">
+    <h1> Escolha o Grupo </h1>
+    <ul></ul>
+</span>
+<div id = "title">
+    <h1> Telebot </h1>
+    <sup id = "license"></sup>
+</div>
+<main>
+    <div>
+        <section class="contacts">
+            <h2> Contatos que capturam </h2>
+            <ul class="contacts">
+                <li>
+                    <input placeholder="API hash" type="text">
+                    <input placeholder="API id" type="number">
+                    <input placeholder="+55" type="text">
+                </li>
+            </ul>
+            <button onclick = "newContact()"> 
+                <img src="images/plus.svg" alt="add contact">
+            </button>
+        </section>
+        <section class="message">
+            <h2> Enviar mensagem em massa </h2>
+            <textarea name="message" id="message" 
+            cols="70" rows="10" onchange = "changeConfig()">
+            </textarea>
+            <sub> 
+                Percorre os membros do grupo enviando a mensagem descrita abaixo, cuidado com essa função, as pessoas podem denunciar seus números.
+            </sub>
+            <button onclick = "start('msg')" disabled> 
+                Enviar mensagem 
+            </button>
+        </section>
+    </div>
+    <section class="config">
+        <h2> Configurações </h2>
+        <div>
+            <label for="pause"> 
+                <b>Interagir</b> a cada quantos segundos 
+            </label>
+            <input type="number" name="pause" 
+                id="pause" value = 30 onchange = "changeConfig()">
+        </div>
+        <div>
+            <label for="skip">
+                Pular os primeiros x contatos 
+            </label>
+            <input type="number" name="skip" 
+                id="skip" value = 0 onchange = "changeConfig()">
+        </div>
+        <div>
+            <label for="online"> 
+                Apenas <b>Interagir</b> com as pessoas online nos últimos x dias
+            </label>
+            <input type="number" name="online"  
+                id="online" value = 1 onchange = "changeConfig()">
+        </div>
+        <div>
+            <label for="limit">
+                Cada conta deve <b>interagir</b> com no máximo quantas pessoas 
+            </label>
+            <input type="number" name="limit" 
+                id="limit" value = 40 onchange = "changeConfig()">
+        </div>
+        <sub> 
+            Interagir: Capturar e adicionar pessoa no caso do adicionador, Capturar ou Enviar mensagem.
+        </sub>
+        <div class="chooses">
+            <h2> Grupos </h2>
+            <div>
+                <input type="text" disabled placeholder="Grupo Origem">
+                <button onclick="callListGroups()" disabled> 
+                    <img src="images/gear.svg">
+                </button>
+            </div>
+            <div>
+                <input type="text" disabled placeholder="Grupo Destino">
+                <button onclick="callListGroups(true)" disabled> 
+                    <img src="images/gear.svg">
+                </button>
+            </div>
+        </div>
+    </section>
+</main>
+<div class="output">
+    <p> 
+        <b>Adicionar pessoas</b>: 
+        Percorre os usuários do grupo origem puxando para o grupo destino. 
+    </p>
+    <p> 
+        <b>Capturar pessoas</b>: 
+        Percorre os usuários do grupo origem salvando em config/usuarios.json 
+    </p>
+</div>
+<button style = "margin-bottom: 1em"
+    onclick="conectar()" id = "connect"> 
+    Conectar 
+</button>
+<div class="buttons" id = "start">
+    <button onclick = "start('add')"> 
+        Adicionar pessoas 
+    </button>
+    <button onclick = "start('save')"> 
+        Capturar pessoas 
+    </button>
+</div>

@@ -21,7 +21,7 @@ div#title {
 h1 {
     font-family: 'Permanent Marker', cursive;
 }
-section {
+main section {
     flex: 1 1 30%;
     margin: 1em 0;
     padding: 1em;
@@ -100,6 +100,7 @@ div.buttons {
     margin-bottom: 1em;
 }
 sub {
-    max-width: fit-content;
     text-align: center;
+    max-width: fit-content;
+    line-height: normal !important;
 }

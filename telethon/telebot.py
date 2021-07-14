@@ -1,12 +1,9 @@
 from telegramapi import captura_id_hash
 import eel, asyncio, json, requests, time
+from datetime import timedelta
 from scraper import Telegram
 
-from datetime import datetime, timedelta
-from cryptography.fernet import Fernet
-from os import listdir
-
-programa = Telegram()
+programa = None
 eel.init('web')
 
 contatos = []
@@ -70,79 +67,63 @@ def rodar_programa(modo):
     loop.run_until_complete(
         programa.rodar_programa(modo))
 
-with open("config/usuarios.json", "w") as file: json.dump([], file)
-try:
-    with open("config/dados.json", "r+") as file:
-        dados = json.load(file)
-    for dado in dados["contacts"]:
-        contatos.append({
-            "id":     dado["id"],
-            "hash":   dado["hash"],
-            "number": dado["number"]
-        })
-    config = dados["config"]
-    config["mensagem"] = {
-        "msg": "", "path": "", "audio": False }
-    modificar_config(config)
-except Exception as e: print(e)
+def autenticar_licenca(email):
+    def devolve_restante(tempo_restante):
+        if  tempo_restante < 0:
+            validacao, mensagem = False, "Sua licença expirou."
+        else:
+            horas_minutos = timedelta(seconds = tempo_restante)
+            duracao = str(horas_minutos)[:-7].replace('days', 'dias')
+            if "dias" not in duracao:
+                duracao += "h"
+            mensagem = f"Sua licença dura {duracao}!"
+            validacao = True
+        return validacao, mensagem
 
-def verify_test():
-    key = b'5oa6VUCRinbN50aH5XT7gOfrbdCeOaEUembWDV3EIW4='
-    f = Fernet(key)
-    try:
-        files = listdir(".")
-        indice = list(map(lambda x:".key" in x, files)).index(True)
-        with open(files[indice], "rb") as file:
-            message = f.decrypt(file.readline())
-            message = message.decode()
-            data, horario = message.split("|")
-            dia, mes, ano = list(map(int, data.split("/")))
-            hora, minuto = list(map(int, horario.split(":")))
-    except:
-        dia, mes, ano, hora, minuto = 1, 2, 2021, 0, 0
-    
-    data_final = datetime(ano, mes, dia, hora, minuto)
-    tempo_restante = (
-        datetime.timestamp(data_final) - 
-        datetime.timestamp(datetime.now()))
-
-    return tempo_restante
-
-def devolve_licenca(email):
     try:
         response = requests.get(
-            "https://licenciador.tk/clients", 
-            params = {
-                "email": email, "bot": "telebot"
+            "https://licenciador.vercel.app/api/clients/", 
+            params = { "email": email, "botName": "telebot"
         }).json()
         if email in response:
             tempo_restante = response[email]["timestamp"] - time.time()
+            validacao, mensagem = devolve_restante(tempo_restante)
         else:
-            tempo_restante = -1
+            validacao, mensagem = False, "Compre uma licença!"
     except Exception as e:
-        print(type(e), e)
-        tempo_restante = -1
-    return tempo_restante
-
-def verify_auth(restante):
-    global programa
-    if restante > 0:
-        programa = Telegram()
-        horas_minutos = timedelta(seconds = restante)
-        eel.changeLicense(str(horas_minutos)[:-7].replace('days', 'dias'))
-    else:
-        eel.changeLicense("Renove a licença")
-        programa = None
-        return False
-    return True
+        print(e)
+        validacao, mensagem = False, "Servidor em manutenção!"
+    return validacao, mensagem
 
 @eel.expose
-def handle_login():
-    email = eel.perguntar("Digite o e-mail da sua licença: ")()
-    restante = devolve_licenca(email)
-    verify_auth(restante)    
+def login(email):
+    global programa
+    validacao, mensagem = autenticar_licenca(email)
+    if validacao:
+        try:
+            programa = Telegram()
 
-restante = verify_test()
-verify_auth(restante)
+            with open("config/usuarios.json", "w"
+                ) as file: json.dump([], file)
+            try:
+                with open("config/dados.json", "r+") as file:
+                    dados = json.load(file)
+                for dado in dados["contacts"]:
+                    contatos.append({
+                        "id":     dado["id"],
+                        "hash":   dado["hash"],
+                        "number": dado["number"]
+                    })
+                config = dados["config"]
+                config["mensagem"] = {
+                    "msg": "", "path": "", "audio": False }
+                modificar_config(config)
+            except Exception as e: print(e)
+
+        except Exception as e:
+            print(e)
+            return False, "Verifique suas credenciais!"
+        return True, mensagem
+    return False, mensagem
 
 eel.start('index.html', port = 8004)
