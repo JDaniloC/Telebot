@@ -2,6 +2,9 @@
 *.session
 *.session-journal
 
+copysender/
+listsender
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
