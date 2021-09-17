@@ -78,7 +78,8 @@ def strDateHour(number):
     return str(number) if len(str(number)) != 1 else "0" + str(number)
 
 class Telegram:
-    def __init__(self, token, channel, permitidos):
+    def __init__(self, token, channel, permitidos, mensagem):
+        print(mensagem)
         self.token = token
         self.bot = amanobot.Bot(token)
         self.my_id = self.bot.getMe()['id']
@@ -339,25 +340,26 @@ class Telegram:
         )
         
         with self.cadeado:
-            if (f"{hora_entrada} {paridade} {direcao.upper()} {resultado}" 
-                not in self.listas_de_entradas[atual]['result'].split("\n")):
-                try:
-                    # Salva informações caso alguém ainda não salvou
-                    self.listas_de_entradas[atual]['result'] += (
-                        f"{hora_entrada} {paridade} {direcao.upper()} {resultado}\n")
-                    if win:
-                        self.listas_de_entradas[atual]['win'] += 1
-                        if gales == 0:
-                            self.listas_de_entradas[atual]["winsg"] += 1
-                    elif esta_aberto:
-                        self.listas_de_entradas[atual]["loss"] += 1
-                    else:
-                        self.listas_de_entradas[atual]["closed"] += 1
+            result_text = f"{hora_entrada} {paridade} {direcao.upper()} {resultado}"
+            if atual in self.listas_de_entradas: 
+                entrada = self.listas_de_entradas[atual]
+                if result_text not in entrada['result'].split("\n"):
+                    try:
+                        # Salva informações caso alguém ainda não salvou
+                        entrada['result'] += f"{result_text}\n"
+                        if win:
+                            entrada['win'] += 1
+                            if gales == 0:
+                                entrada["winsg"] += 1
+                        elif esta_aberto:
+                            entrada["loss"] += 1
+                        else:
+                            entrada["closed"] += 1
 
-                    print(f"Salvando {hora_entrada} {paridade}: {message_id}")
-                    self.mandar_completa(atual)
-                except Exception as e:
-                    print(type(e), e)
+                        print(f"Salvando {hora_entrada} {paridade}: {message_id}")
+                        self.mandar_completa(atual)
+                    except Exception as e:
+                        print(type(e), e)
 
         self.editar_mensagem(message_id, resposta)
 
@@ -608,8 +610,9 @@ class Telegram:
                     resposta = ""
                     for entrada in options['lista'].values():
                         resposta += entrada['msg']
-                    self.bot.sendMessage(
-                        from_id, resposta)
+                    if resposta == "":
+                        resposta = "Nenhuma lista registrada."
+                    self.bot.sendMessage(from_id, resposta)
             self.bot.sendMessage(from_id, "Fim das listas.")
         elif query_data == "start":
             print("Entranho no modo de transmissão")
@@ -749,7 +752,7 @@ if __name__ == "__main__":
     try:
         with open("settings.json", "r+") as file:
             info = json.load(file)
-        program = Telegram(info["token"], info["canal"], info["id"])
+        program = Telegram(info["token"], info["canal"], info["id"], "Iniciando bot...")
         verificador = program.rodando
         with open("settings.json", "w") as file:
             info['canal'] = program.channel

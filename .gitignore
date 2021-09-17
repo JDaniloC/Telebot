@@ -2,7 +2,6 @@
 *.session
 *.session-journal
 
-listsender
 copysender
 
 # Byte-compiled / optimized / DLL files

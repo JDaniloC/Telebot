@@ -395,7 +395,8 @@ class WebsocketClient(object):
         elif message["name"] == "instruments":
             self.api.instruments = message["msg"]
             for instrument in range(len(message["msg"]["instruments"])):
-                message["msg"]["instruments"][instrument].pop("data")
+                if "data" in message["msg"]["instruments"][instrument]:
+                    message["msg"]["instruments"][instrument].pop("data")
             self.api.instruments_index = message["msg"]
         elif message["name"] == "client-price-generated":
             ask_price = [d for d in message["msg"]["prices"] if d['strike'] == 'SPT'][0]['call']['ask']

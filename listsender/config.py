@@ -1,6 +1,34 @@
-import json, bot
-from tkinter import *
+import json, bot, time, requests
+from datetime import timedelta
 from tkinter import messagebox
+from tkinter import *
+
+def autenticar_licenca(email):
+    def devolve_restante(tempo_restante):
+        if  tempo_restante < 0:
+            validacao, mensagem = False, "Sua licença expirou."
+        else:
+            horas_minutos = timedelta(seconds = tempo_restante)
+            duracao = str(horas_minutos)[:-7].replace('days', 'dias')
+            if "dias" not in duracao:
+                duracao += "h"
+            mensagem = f"Sua licença dura {duracao}!"
+            validacao = True
+        return validacao, mensagem
+
+    try:
+        response = requests.get(
+            "https://licenciador.vercel.app/api/clients/", 
+            params = { "email": email, "botName": "listsender"
+        }).json()
+        if email in response:
+            tempo_restante = response[email]["timestamp"] - time.time()
+            validacao, mensagem = devolve_restante(tempo_restante)
+        else:
+            validacao, mensagem = False, "Compre uma licença!"
+    except:
+        validacao, mensagem = False, "Servidor em manutenção!"
+    return validacao, mensagem
 
 class Config(Frame):
     def __init__(self, janela):
@@ -10,18 +38,19 @@ class Config(Frame):
         self.widgets()
 
     def widgets(self):
-        titulos = ["Token", "Canal", "Id"]
+        titulos = ["Email", "Token", "Canal", "Id"]
         self.entradas = {}
         for i in range(len(titulos)):
             Label(self, text = titulos[i]).grid(row = i)
             self.entradas[titulos[i].lower()] = Entry(self, width = 50)
             self.entradas[titulos[i].lower()].grid(row = i, column = 1)
-        Label(self, justify = LEFT, text = """
+        self.texto = Label(self, justify = LEFT, text = """
     Infos:
         Token: Conseguir com o Botfather do telegram
         Canais: O link/id dos grupos/canais separado por vírgula
         Id: Os contatos que podem falar com o bot"""
-            ).grid(row = len(titulos), columnspan = 2)
+            )
+        self.texto.grid(row = len(titulos), columnspan = 2)
 
         Button(self, text = "Salvar", command = self.salvar
             ).grid(row = 5, columnspan = 2)
@@ -41,10 +70,12 @@ class Config(Frame):
             print(e)
 
     def tratar_dados(self, info):
-        if info['canal'] != "": info['canal'] = info['canal'].strip().replace(" ", '').split(",")
+        if info['canal'] != "": 
+            info['canal'] = info['canal'].strip().replace(" ", '').split(",")
         else: info['canal'] = []
 
-        if info['id'] != "": info['id'] = list(map(int, info['id'].strip().replace(" ", "").split(",")))
+        if info['id'] != "": info['id'] = list(map(int, 
+            info['id'].strip().replace(" ", "").split(",")))
         else: info['id'] = []
         return info
 
@@ -66,8 +97,12 @@ class Config(Frame):
         }
         info = self.tratar_dados(info)
 
-        self.janela.destroy()
-        bot.Telegram(info["token"], info["canal"], info["id"])
+        validacao, mensagem = autenticar_licenca(info["email"])
+        if validacao:
+            self.janela.destroy()
+            bot.Telegram(info["token"], info["canal"], info["id"], mensagem)
+        else:
+            self.texto["text"] = mensagem
 
 if __name__ == "__main__":
     janela = Tk()
