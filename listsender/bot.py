@@ -679,11 +679,11 @@ class Telegram:
             return "M5"
 
         if comando != []:
-            content_type, chat_type, chat_id = amanobot.glance(comando)
+            _, _, chat_id = amanobot.glance(comando)
 
             if chat_id in self.permitidos:
                 if self.escolher_lista:
-                    key, nome = comando['text'].split(" - ")
+                    key, _ = comando['text'].split(" - ")
                     key = int(key)
                     if self.listas_de_entradas.get(key):
                         mensagem = "Lista já iniciada"

@@ -1,4 +1,5 @@
 .vscode
+dados.json
 *.session
 *.session-journal
 
