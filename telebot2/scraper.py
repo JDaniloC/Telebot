@@ -142,21 +142,6 @@ class Telegram:
                 erros.append(client)
         return [await erro.get_me()["phone"] for erro in erros]
 
-    async def rodar_programa(self, modo):
-        esperar = []
-        offset = self.offset
-        for client in self.lista_clients:
-            grupo_origem = self.lista_clients[client]["origem"]
-            grupo_destino = self.lista_clients[client]["destino"]
-
-            task = asyncio.create_task(self.interagir(
-                client, grupo_origem, grupo_destino, modo))
-            
-            esperar.append(task)
-            offset += self.limitar
-
-        await asyncio.wait(esperar)
-
     def salvar(self):
         with open("config/dados.json", "w") as file: 
             json.dump({
@@ -170,15 +155,14 @@ class Telegram:
                 "contacts": self.usuarios
             }, file, indent = 2)
 
-    async def interagir(
-        self, client, grupo_origem, grupo_destino, modo = "add"):
+    async def interagir(self, client, grupo_origem, 
+        grupo_destino, participants, modo = "add"):
         self.salvar()
         self.output(f'Capturando membros... do {grupo_origem.title}')
         cont, pausar = 0, False
         offset = self.offset
         self.output(f"Começando a partir do {offset}")
-        async for user in client.iter_participants(
-            grupo_origem, aggressive=True):
+        for user in participants:
             if offset > 0:
                 offset -= 1
                 continue
@@ -192,7 +176,7 @@ class Telegram:
             if hasattr(user.status, "was_online"):
                 online = user.status.was_online.replace(tzinfo = None)
                 tempo = datetime.now() - online
-                if not tempo.days < self.filtro:
+                if not tempo.days < self.filtro and self.filtro >= 0:
                     continue
             try:
                 usuario = InputPeerUser(contato['id'], contato['hash'])
@@ -206,7 +190,7 @@ class Telegram:
                             video_note = self.mensagem['video'])
                 elif modo == "save":
                     self.output(f"Guardando {contato['name']}")
-                    identificador, nome = contato['name'].split(" - ")
+                    identificador, _ = contato['name'].split(" - ")
                     if identificador != "":
                         guarda_usuario(identificador)
                 else:

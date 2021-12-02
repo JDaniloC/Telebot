@@ -61,11 +61,27 @@ def escolher_grupo(indice):
     loop.run_until_complete(
         programa.escolher_grupo(int(indice)))
 
+async def criar_tasks(modo):
+    esperar = []
+    offset = programa.offset
+    for client in programa.lista_clients:
+        exibir(f"Coletando usuários do grupo {grupo_origem.title}...")
+        grupo_origem = programa.lista_clients[client]["origem"]
+        grupo_destino = programa.lista_clients[client]["destino"]
+        users = await client.get_participants(grupo_origem, aggressive = True)
+        exibir(f"Consegui coletar {len(users)} usuários do grupo {grupo_origem.title}.")
+        task = asyncio.create_task(programa.interagir(
+            client, grupo_origem, grupo_destino, users, modo))
+        
+        esperar.append(task)
+        offset += programa.limitar
+
+    await asyncio.wait(esperar)
+
 @eel.expose
 def rodar_programa(modo):
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(
-        programa.rodar_programa(modo))
+    loop.run_until_complete(criar_tasks(modo))
 
 def autenticar_licenca(email):
     def devolve_restante(tempo_restante):

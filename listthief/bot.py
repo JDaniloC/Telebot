@@ -9,7 +9,6 @@ from messages import *
 MAX_CACHE = 10
 DATA_PATH = "dados.json"
 
-target_chats = []
 old_messages = []
 reply_chats = []
 
@@ -38,12 +37,17 @@ async def enviar_texto(client, message):
         reply_chats.remove(chat)
 
 async def main():
+    global reply_chats
     with open(DATA_PATH, encoding = "utf-8") as file:
         data = json.load(file)
         phone_number = data["phone_number"] 
         api_hash = data["api_hash"] 
-        api_id = data["api_id"] 
         pattern = data["pattern"]
+        api_id = data["api_id"]
+
+        target_chats = data.get("target_chats", [])
+        reply_chats = data.get("reply_chats", [])
+        replace = data.get("replace", {})
 
     client = await conectar(phone_number, api_id, api_hash)
     response = await client(GetDialogsRequest(
@@ -68,7 +72,9 @@ async def main():
     @client.on(events.NewMessage(chats = target_chats, pattern = pattern))
     async def handler(event):
         message = event.message.message
-        print("Recebi uma mensagem:", message)
+        for key, value in replace.items():
+            message = message.replace(key, value)
+        
         if message not in old_messages:
             old_messages.append(message)
             if len(old_messages) >= MAX_CACHE:
