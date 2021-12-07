@@ -172,17 +172,12 @@ function start(modo) {
     eel.rodar_programa(modo);
 }
 
-async function login() {
-    const email = document.querySelector(
-        "#login input[type=email]")
-    const button = document.querySelector(
-        "#login button.access")
+async function login(button) {
     button.disabled = true;
 
-    const [auth, msg] = await eel.login(email.value)();
+    const [auth, msg] = await eel.login()();
     
     if (auth) {
-        email.value = "";
         $("body").load("./components/scraper.html", () => {
             eel.carregar_config()(config => {
                 document.querySelector("input#pause").value  = config["pausar"] 
@@ -196,9 +191,7 @@ async function login() {
             ).innerHTML = msg
         });
     } else {
-        document.querySelector("#login p"
-            ).innerText = msg
-        email.style.borderColor = "red";
+        document.querySelector("#login p").innerText = msg
     }
     button.disabled = false;
 }

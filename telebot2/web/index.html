@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,23 +20,14 @@
         <header>
             <h1>
                 <img src="images/favicon.ico" alt="Bot icon">
-                    Telebot
+                Telebot
             </h1>
-            <!-- <a href="https://t.me/estrategiabearteste" target = "_blank">
-                <img src="images/telegram.png" alt="Telegram icon">
-            </a> -->
         </header>
         <form onsubmit="return false">
-            <h2> Entrar </h2>
+            <h2> Acessar conta </h2>
             <p> </p>
-            <input class = "form-control form-control-lg" 
-                type="email" placeholder="E-mail" required>
-            <!-- <input class = "form-control form-control-lg" 
-                type="password" placeholder="Senha" required> -->
-            <button type = "button" class = "access"
-                onclick = "login()">
-                Entrar
-            </button>
+
+            <button id = "sign" onclick = "login(this)"></button>
             <div class = "separator">
                 <div>
                     <span>

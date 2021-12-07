@@ -1,5 +1,6 @@
+import eel, asyncio, json, requests, time, sys, traceback
+from google import get_google_credentials
 from telegramapi import captura_id_hash
-import eel, asyncio, json, requests, time
 from datetime import timedelta
 from scraper import Telegram
 
@@ -65,9 +66,9 @@ async def criar_tasks(modo):
     esperar = []
     offset = programa.offset
     for client in programa.lista_clients:
-        exibir(f"Coletando usuários do grupo {grupo_origem.title}...")
         grupo_origem = programa.lista_clients[client]["origem"]
         grupo_destino = programa.lista_clients[client]["destino"]
+        exibir(f"Coletando usuários do grupo {grupo_origem.title}...")
         users = await client.get_participants(grupo_origem, aggressive = True)
         exibir(f"Consegui coletar {len(users)} usuários do grupo {grupo_origem.title}.")
         task = asyncio.create_task(programa.interagir(
@@ -83,7 +84,7 @@ def rodar_programa(modo):
     loop = asyncio.get_event_loop()
     loop.run_until_complete(criar_tasks(modo))
 
-def autenticar_licenca(email):
+def autenticar_licenca():
     def devolve_restante(tempo_restante):
         if  tempo_restante < 0:
             validacao, mensagem = False, "Sua licença expirou."
@@ -92,9 +93,17 @@ def autenticar_licenca(email):
             duracao = str(horas_minutos)[:-7].replace('days', 'dias')
             if "dias" not in duracao:
                 duracao += "h"
-            mensagem = f"Sua licença dura {duracao}!"
+            mensagem = f"Bem-vindo {name}, sua licença dura {duracao}!"
             validacao = True
         return validacao, mensagem
+
+    try:
+        name, email, _ = get_google_credentials()
+    except: 
+        arquivo = open(f"config/errors.log", "a", 
+            encoding = "utf-8", errors = "??")
+        traceback.print_exc(file = arquivo)
+        return False, "Não foi possível obter suas credenciais."
 
     try:
         response = requests.get(
@@ -112,9 +121,9 @@ def autenticar_licenca(email):
     return validacao, mensagem
 
 @eel.expose
-def login(email):
+def login():
     global programa
-    validacao, mensagem = autenticar_licenca(email)
+    validacao, mensagem = autenticar_licenca()
     if validacao:
         try:
             programa = Telegram()
@@ -142,4 +151,7 @@ def login(email):
         return True, mensagem
     return False, mensagem
 
-eel.start('index.html', port = 8004)
+
+def quit(*args): sys.exit()
+
+eel.start('index.html', port = 8004, close_callback = quit)

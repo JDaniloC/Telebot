@@ -89,3 +89,18 @@ section#login form .buy:hover {
     height: 1px;
     border-bottom: 1px solid rgb(225, 225, 225);
 }
+#sign {
+    background-image: url(../images/google.png);
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-position: center;
+    height: 6em;
+    padding: 0;
+    margin: 0;
+}
+#sign:hover {
+    background-image: url(../images/google-hover.png);
+}
+#sign:disabled {
+    background-image: url(../images/google-disabled.png);
+}
