@@ -22,7 +22,9 @@ def get_google_credentials():
         authorization_prompt_message = "Por favor, visite este site: {url}",
         success_message = "Pronto! Você pode fechar esta janela.")
 
-    user_info_service = build('oauth2', 'v2', credentials=credentials)
+    user_info_service = build('oauth2', 'v2', 
+                              credentials=credentials, 
+                              static_discovery=False)
     user_info = user_info_service.userinfo().get().execute()
     
     return user_info["name"], user_info['email'], user_info['picture']

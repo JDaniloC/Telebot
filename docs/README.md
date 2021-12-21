@@ -3,7 +3,7 @@
 > Telegram bots to invite people from mega groups and channels and so on.
 
 <p align="center">
-  <img alt="Main page" src="docs/telebot2-main.png" width = "100%">
+  <img alt="Main page" src="./telebot2-main.png" width = "100%">
 </p>
 
 This repository is a collection of telegram bots that can invite people, send programmed messages, copy messages and so on. Important to note: **The limit of add each day is 40**, more than it will be blocked by spam.
@@ -27,7 +27,7 @@ Run `python -m eel telebot.py web -F -w -i web/images/favicon.ico` to compile th
 
 ## Telebot v.1
 
-<img alt="Telebot version 1" src="docs/telebot1.png" width = "50%" align = "left">
+<img alt="Telebot version 1" src="./telebot1.png" width = "50%" align = "left">
 
 The first version of telebot, where can add, send messages, files (images, audio or video), with the same settings as the second version, but built using TKinter, and the "logs panel" is the terminal, it's used if the telebot2 doesn't add no one.
 
@@ -42,7 +42,7 @@ The first version of telebot, where can add, send messages, files (images, audio
 
 ## Other bots
 
-<img alt="Group list" src="docs/listsender.png" width = "50%" align = "right">
+<img alt="Group list" src="./listsender.png" width = "50%" align = "right">
 
 ### MetaSender
 Reads the MQL return file and sends the messages to X groups, sends a parcial result (with tendency analysis like SMA, RSI and the closest support/resistance) and full result when the trades are completed.
@@ -61,6 +61,6 @@ The commands are:
 ### 
 
 <p align="center">
-    <img alt="Group list" src="docs/telebot2-groups.png" width = "100%">
-    <img alt="Adding" src="docs/telebot2-label.png" width = "100%">
+    <img alt="Group list" src="./telebot2-groups.png" width = "100%">
+    <img alt="Adding" src="./telebot2-label.png" width = "100%">
 </p>

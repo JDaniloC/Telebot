@@ -1,5 +1,5 @@
 import eel, asyncio, json, requests, time, sys, traceback
-from google import get_google_credentials
+from googleapi import get_google_credentials
 from telegramapi import captura_id_hash
 from datetime import timedelta
 from scraper import Telegram
