@@ -1,11 +1,8 @@
-aiohttp==3.6.2
 amanobot==1.8.1
-async-timeout==3.0.1
-multidict==4.7.6
-pyaes==1.6.1
-pyasn1==0.4.8
-rsa==4.6
+cryptography==3.2.1
 selenium==3.141.0
 telethon==1.24.0
 websocket-client==0.56.0
-yarl==1.5.1
+Eel==0.12.4
+google_auth_oauthlib
+google-api-python-client

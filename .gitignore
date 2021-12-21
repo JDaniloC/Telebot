@@ -3,6 +3,7 @@
 dados.json
 *.session
 *.session-journal
+*.key
 
 copysender
 
