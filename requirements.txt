@@ -1,5 +1,5 @@
 amanobot==1.8.1
-cryptography==3.3.2
+cryptography~=3.3
 selenium==3.141.0
 telethon==1.24.0
 websocket-client==0.56.0
