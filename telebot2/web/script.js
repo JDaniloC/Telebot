@@ -174,9 +174,7 @@ function start(modo) {
 
 async function login(button) {
     button.disabled = true;
-
     const [auth, msg] = await eel.login()();
-    
     if (auth) {
         $("body").load("./components/scraper.html", () => {
             eel.carregar_config()(config => {
@@ -185,10 +183,7 @@ async function login(button) {
                 document.querySelector("input#online").value = config["filtro"] 
                 document.querySelector("input#limit").value = config["limitar"] 
             })
-
-            document.querySelector(
-                "sup#license"
-            ).innerHTML = msg
+            document.querySelector("sup#license").innerHTML = msg
         });
     } else {
         document.querySelector("#login p").innerText = msg

@@ -10,7 +10,7 @@ def get_google_credentials():
             chave = Fernet(b'kwlHwoHHTYbrYV6WyEJR5Hq_8LIhNtnQ0ltntvHcLDg=')
             arquivo = chave.decrypt("".join(infos.readlines()).encode())
             infos = json.loads(arquivo.decode('utf-8'))
-    except: pass
+    except Exception: pass
     
     flow = InstalledAppFlow.from_client_config(infos,
         scopes=["https://www.googleapis.com/auth/userinfo.profile", 

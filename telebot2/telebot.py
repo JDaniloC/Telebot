@@ -3,6 +3,10 @@ from googleapi import get_google_credentials
 from telegramapi import captura_id_hash
 from datetime import timedelta
 from scraper import Telegram
+import os
+
+DISABLE_AUTH = os.environ.get('TELEBOT2_DISABLE_AUTH', '0') == '1'
+DISABLE_OAUTH = os.environ.get('TELEBOT2_DISABLE_OAUTH', '0') == '1'
 
 programa = None
 eel.init('web')
@@ -84,40 +88,47 @@ def rodar_programa(modo):
     loop = asyncio.get_event_loop()
     loop.run_until_complete(criar_tasks(modo))
 
+
 def autenticar_licenca():
+    if DISABLE_AUTH:
+        return True, "License check disabled for development."
+
     def devolve_restante(tempo_restante):
-        if  tempo_restante < 0:
-            validacao, mensagem = False, "Sua licença expirou."
+        if tempo_restante < 0:
+            validacao, mensagem = False, "Your license has expired."
         else:
-            horas_minutos = timedelta(seconds = tempo_restante)
-            duracao = str(horas_minutos)[:-7].replace('days', 'dias')
-            if "dias" not in duracao:
+            horas_minutos = timedelta(seconds=tempo_restante)
+            duracao = str(horas_minutos)[:-7].replace('days', 'days')
+            if "days" not in duracao:
                 duracao += "h"
-            mensagem = f"Bem-vindo {name}, sua licença dura {duracao}!"
+            mensagem = f"Welcome, your license is valid for {duracao}!"
             validacao = True
         return validacao, mensagem
 
-    try:
-        name, email, _ = get_google_credentials()
-    except: 
-        arquivo = open(f"config/errors.log", "a", 
-            encoding = "utf-8", errors = "??")
-        traceback.print_exc(file = arquivo)
-        return False, "Não foi possível obter suas credenciais."
+    if DISABLE_OAUTH:
+        email = "anon@oauth.local"
+    else:
+        try:
+            _, email, _ = get_google_credentials()
+        except Exception as e:
+            arquivo = open("config/errors.log", "a",
+                encoding = "utf-8", errors = "??")
+            traceback.print_exc(file = arquivo)
+            return False, "Não foi possível obter suas credenciais."
 
     try:
         response = requests.get(
-            "https://licenciador.vercel.app/api/clients/", 
-            params = { "email": email, "botName": "telebot"
-        }).json()
+            "https://licenciador.vercel.app/api/clients/",
+            params={"email": email, "botName": "telebot"}
+        ).json()
         if email in response:
             tempo_restante = response[email]["timestamp"] - time.time()
             validacao, mensagem = devolve_restante(tempo_restante)
         else:
-            validacao, mensagem = False, "Compre uma licença!"
+            validacao, mensagem = False, "Buy a license!"
     except Exception as e:
         print(e)
-        validacao, mensagem = False, "Servidor em manutenção!"
+        validacao, mensagem = False, "Server under maintenance!"
     return validacao, mensagem
 
 @eel.expose
